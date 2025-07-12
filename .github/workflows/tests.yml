@@ -17,10 +17,16 @@ jobs:
         include:
           - laravel: 10.*
             testbench: 8.*
+            pest: 2.*
+            phpunit: 10.*
           - laravel: 11.*
             testbench: 9.*
+            pest: 3.*
+            phpunit: 11.*
           - laravel: 12.*
             testbench: 9.*
+            pest: 3.*
+            phpunit: 11.*
         exclude:
           - laravel: 12.*
             php: 8.2
@@ -38,9 +44,13 @@ jobs:
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
           coverage: none
 
+      - name: Remove composer.lock
+        run: rm -f composer.lock
+
       - name: Install dependencies
         run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update --dev
+          composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
+          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" "pestphp/pest:${{ matrix.pest }}" "phpunit/phpunit:${{ matrix.phpunit }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction
 
       - name: Execute tests
