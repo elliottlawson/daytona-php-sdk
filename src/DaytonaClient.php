@@ -184,19 +184,19 @@ class DaytonaClient
             $payload = [
                 'command' => $command,
             ];
-            
+
             if ($cwd !== null) {
                 $payload['cwd'] = $cwd;
             }
-            
+
             if ($env !== null) {
                 $payload['env'] = $env;
             }
-            
+
             if ($timeout !== null) {
                 $payload['timeout'] = $timeout;
             }
-            
+
             Log::debug('Executing command in Daytona sandbox', [
                 'sandboxId' => $sandboxId,
                 'command' => $command,
