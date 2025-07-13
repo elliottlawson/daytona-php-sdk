@@ -241,7 +241,7 @@ if ($sandbox->fileExists('/workspace/config.php')) {
 
 ```php
 // Using the Sandbox object (recommended)
-$result = $sandbox->exec('ls -la', '/workspace');
+$result = $sandbox->exec('ls -la');
 
 // Check the result
 if ($result->isSuccessful()) {
@@ -255,8 +255,22 @@ if ($result->isSuccessful()) {
 $result = $sandbox->exec('composer install');
 echo $result->output;
 
+// Execute with specific working directory
+$result = $sandbox->exec('ls -la', '/workspace');
+
+// Execute with custom environment variables
+$env = ['NODE_ENV' => 'production', 'API_KEY' => 'secret123'];
+$result = $sandbox->exec('npm run build', null, $env);
+
+// Execute with timeout (in milliseconds)
+$timeout = 30000; // 30 seconds
+$result = $sandbox->exec('npm test', null, null, $timeout);
+
+// Execute with cwd, env and timeout
+$result = $sandbox->exec('composer install', '/app', $env, $timeout);
+
 // Or using the client directly
-$result = $client->executeCommand($sandboxId, 'npm test', '/workspace');
+$result = $client->executeCommand($sandboxId, 'npm test', '/workspace', $env, $timeout);
 ```
 
 ### Git Operations

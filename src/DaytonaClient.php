@@ -178,20 +178,34 @@ class DaytonaClient
         }
     }
 
-    public function executeCommand(string $sandboxId, string $command, string $cwd = '/workspace'): CommandResponse
+    public function executeCommand(string $sandboxId, string $command, ?string $cwd = null, ?array $env = null, ?int $timeout = null): CommandResponse
     {
         try {
+            $payload = [
+                'command' => $command,
+            ];
+            
+            if ($cwd !== null) {
+                $payload['cwd'] = $cwd;
+            }
+            
+            if ($env !== null) {
+                $payload['env'] = $env;
+            }
+            
+            if ($timeout !== null) {
+                $payload['timeout'] = $timeout;
+            }
+            
             Log::debug('Executing command in Daytona sandbox', [
                 'sandboxId' => $sandboxId,
                 'command' => $command,
                 'cwd' => $cwd,
+                'env' => $env,
+                'timeout' => $timeout,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/process/execute", [
-                'command' => $command,
-                'cwd' => $cwd,
-            ]);
-            ray($response, $response->body(), $response->json(), $response->object());
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/process/execute", $payload);
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'execute command');
@@ -211,6 +225,9 @@ class DaytonaClient
             Log::error('Failed to execute command in Daytona sandbox', [
                 'sandboxId' => $sandboxId,
                 'command' => $command,
+                'cwd' => $cwd,
+                'env' => $env,
+                'timeout' => $timeout,
                 'error' => $e->getMessage(),
             ]);
             throw CommandExecutionException::executionFailed($command, $e->getMessage(), $e);

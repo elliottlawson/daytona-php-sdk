@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ElliottLawson\Daytona\Sandbox getSandboxById(string $sandboxId)
  * @method static void startSandbox(string $sandboxId)
  * @method static void stopSandbox(string $sandboxId)
- * @method static \ElliottLawson\Daytona\DTOs\CommandResponse executeCommand(string $sandboxId, string $command, string $cwd = '/workspace')
+ * @method static \ElliottLawson\Daytona\DTOs\CommandResponse executeCommand(string $sandboxId, string $command, ?string $cwd = null, ?array $env = null, ?int $timeout = null)
  * @method static string readFile(string $sandboxId, string $path)
  * @method static void writeFile(string $sandboxId, string $path, string $content)
  * @method static \ElliottLawson\Daytona\DTOs\DirectoryListingResponse listDirectory(string $sandboxId, string $path)

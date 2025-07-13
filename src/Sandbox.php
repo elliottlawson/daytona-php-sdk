@@ -6,8 +6,6 @@ use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\DirectoryListingResponse;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 
-// use Illuminate\Support\Sleep;
-
 class Sandbox
 {
     private ?SandboxResponse $data = null;
@@ -131,9 +129,9 @@ class Sandbox
         return $this;
     }
 
-    public function exec(string $command, string $cwd = '/workspace'): CommandResponse
+    public function exec(string $command, ?string $cwd = null, ?array $env = null, ?int $timeout = null): CommandResponse
     {
-        return $this->client->executeCommand($this->id, $command, $cwd);
+        return $this->client->executeCommand($this->id, $command, $cwd, $env, $timeout);
     }
 
     public function readFile(string $path): string
