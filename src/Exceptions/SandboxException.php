@@ -36,13 +36,6 @@ class SandboxException extends Exception
         return new self("Failed to stop sandbox {$sandboxId}: {$message}", 0, $previous);
     }
 
-    public static function stateTransitionTimeout(string $sandboxId, string $expectedState, string $currentState, int $timeout): self
-    {
-        return new self(
-            "Sandbox {$sandboxId} failed to reach '{$expectedState}' state within {$timeout} seconds. Current state: {$currentState}"
-        );
-    }
-
     public static function failedToStart(string $sandboxId, string $currentState): self
     {
         return new self("Sandbox {$sandboxId} failed to start. Current state: {$currentState}");

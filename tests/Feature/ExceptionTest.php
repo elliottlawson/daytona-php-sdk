@@ -27,9 +27,8 @@ it('creates SandboxException with proper messages', function () {
     $exception = SandboxException::notFound('sandbox-123');
     expect($exception->getMessage())->toBe('Sandbox not found: sandbox-123');
     
-    $exception = SandboxException::stateTransitionTimeout('sandbox-123', 'started', 'starting', 60);
-    expect($exception->getMessage())->toContain("Sandbox sandbox-123 failed to reach 'started' state within 60 seconds");
-    expect($exception->getMessage())->toContain('Current state: starting');
+    $exception = SandboxException::failedToStart('sandbox-123', 'error');
+    expect($exception->getMessage())->toBe('Sandbox sandbox-123 failed to start. Current state: error');
 });
 
 it('creates FileSystemException with proper messages', function () {
