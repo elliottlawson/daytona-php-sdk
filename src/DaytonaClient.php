@@ -2,29 +2,26 @@
 
 namespace ElliottLawson\Daytona;
 
-use ElliottLawson\Daytona\CommandResponseParser;
-use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
-use ElliottLawson\Daytona\Exceptions\ApiException;
-use ElliottLawson\Daytona\Exceptions\CommandExecutionException;
-use ElliottLawson\Daytona\Exceptions\ConfigurationException;
-use ElliottLawson\Daytona\Exceptions\FileSystemException;
-use ElliottLawson\Daytona\Exceptions\GitException;
-use ElliottLawson\Daytona\Exceptions\SandboxException;
 use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\DTOs\DirectoryListingResponse;
 use ElliottLawson\Daytona\DTOs\GitBranchesResponse;
 use ElliottLawson\Daytona\DTOs\GitHistoryResponse;
 use ElliottLawson\Daytona\DTOs\GitStatusResponse;
+use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
+use ElliottLawson\Daytona\Exceptions\ApiException;
+use ElliottLawson\Daytona\Exceptions\CommandExecutionException;
+use ElliottLawson\Daytona\Exceptions\ConfigurationException;
+use ElliottLawson\Daytona\Exceptions\FileSystemException;
+use ElliottLawson\Daytona\Exceptions\GitException;
+use ElliottLawson\Daytona\Exceptions\SandboxException;
 use Illuminate\Http\Client\RequestException;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class DaytonaClient
 {
-
     public function __construct(
         private Config $config,
     ) {
@@ -74,7 +71,7 @@ class DaytonaClient
 
             $sandboxResponse = SandboxResponse::fromArray($data);
             $sandbox = new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
-            
+
             return $sandbox;
         } catch (RequestException $e) {
             Log::error('Failed to create Daytona sandbox', [
@@ -609,9 +606,10 @@ class DaytonaClient
     public function getSandboxById(string $sandboxId): Sandbox
     {
         $response = $this->getSandbox($sandboxId);
+
         return new Sandbox($sandboxId, $this, $response);
     }
-    
+
     /**
      * Create a Sandbox instance from a SandboxResponse.
      * This is useful when you need the behavioral methods of Sandbox.

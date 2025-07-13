@@ -5,7 +5,7 @@ namespace ElliottLawson\Daytona\DTOs;
 class DirectoryListingResponse
 {
     /**
-     * @param FileInfo[] $files
+     * @param  FileInfo[]  $files
      */
     public function __construct(
         public readonly array $files,
@@ -15,9 +15,9 @@ class DirectoryListingResponse
     {
         // Handle both direct array of files and files nested under 'files' key
         $filesData = isset($data['files']) ? $data['files'] : $data;
-        
+
         $files = array_map(
-            fn(array $file) => FileInfo::fromArray($file),
+            fn (array $file) => FileInfo::fromArray($file),
             $filesData
         );
 
@@ -27,7 +27,7 @@ class DirectoryListingResponse
     public function toArray(): array
     {
         return array_map(
-            fn(FileInfo $file) => $file->toArray(),
+            fn (FileInfo $file) => $file->toArray(),
             $this->files
         );
     }

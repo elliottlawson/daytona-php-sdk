@@ -28,7 +28,7 @@ class ServiceProvider extends BaseServiceProvider
         $this->app->singleton(DaytonaClient::class, function (Application $app) {
             return new DaytonaClient($app->make(Config::class));
         });
-        
+
         // Register the facade accessor
         $this->app->singleton('daytona', function (Application $app) {
             return $app->make(DaytonaClient::class);

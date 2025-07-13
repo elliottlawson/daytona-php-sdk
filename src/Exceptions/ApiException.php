@@ -13,7 +13,7 @@ class ApiException extends Exception
     {
         $statusCode = $response->status();
         $body = $response->body();
-        
+
         $message = match ($statusCode) {
             401 => "Authentication failed for {$operation}. Please check your API key.",
             403 => "Access denied for {$operation}. Please check your permissions.",
@@ -25,7 +25,7 @@ class ApiException extends Exception
 
         $exception = new self($message, $statusCode);
         $exception->response = $response;
-        
+
         return $exception;
     }
 

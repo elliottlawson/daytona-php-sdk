@@ -5,13 +5,13 @@ namespace ElliottLawson\Daytona;
 use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\DirectoryListingResponse;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
-use ElliottLawson\Daytona\Exceptions\SandboxException;
+
 // use Illuminate\Support\Sleep;
 
 class Sandbox
 {
     private ?SandboxResponse $data = null;
-    
+
     public function __construct(
         public readonly string $id,
         protected DaytonaClient $client,
@@ -127,9 +127,9 @@ class Sandbox
     public function refresh(): self
     {
         $this->data = $this->client->getSandbox($this->id);
+
         return $this;
     }
-
 
     public function exec(string $command, string $cwd = '/workspace'): CommandResponse
     {
@@ -161,11 +161,11 @@ class Sandbox
         return $this->client->fileExists($this->id, $path);
     }
 
-
     // Git operations
     public function gitClone(string $url, ?string $branch = null, string $path = '/workspace', ?string $username = null, ?string $password = null): self
     {
         $this->client->gitClone($this->id, $url, $branch, $path, $username, $password);
+
         return $this;
     }
 
@@ -177,18 +177,21 @@ class Sandbox
     public function gitAdd(string $repoPath, array $filePaths): self
     {
         $this->client->gitAdd($this->id, $repoPath, $filePaths);
+
         return $this;
     }
 
     public function gitCommit(string $repoPath, string $message, string $authorName, string $authorEmail): self
     {
         $this->client->gitCommit($this->id, $repoPath, $message, $authorName, $authorEmail);
+
         return $this;
     }
 
     public function gitPush(string $repoPath, ?string $username = null, ?string $password = null): self
     {
         $this->client->gitPush($this->id, $repoPath, $username, $password);
+
         return $this;
     }
 }

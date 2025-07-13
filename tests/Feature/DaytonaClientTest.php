@@ -20,10 +20,10 @@ it('can be instantiated from Laravel config', function () {
     config(['daytona.api_key' => 'test-key']);
     config(['daytona.api_url' => 'https://api.daytona.io']);
     config(['daytona.organization_id' => 'test-org']);
-    
+
     $config = app(Config::class);
     $client = new DaytonaClient($config);
-    
+
     expect($client)->toBeInstanceOf(DaytonaClient::class);
 });
 
@@ -33,9 +33,9 @@ it('can be instantiated with typed configuration', function () {
         apiKey: 'test-key',
         organizationId: 'test-org'
     );
-    
+
     $client = new DaytonaClient($config);
-    
+
     expect($client)->toBeInstanceOf(DaytonaClient::class);
 });
 
@@ -50,6 +50,6 @@ it('throws exception when api key is missing', function () {
 
 it('can be resolved from container in Laravel', function () {
     $client = app(DaytonaClient::class);
-    
+
     expect($client)->toBeInstanceOf(DaytonaClient::class);
 });

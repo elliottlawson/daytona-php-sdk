@@ -8,7 +8,7 @@ class CommandResponseParser
 {
     /**
      * Parse command execution response from Daytona API.
-     * 
+     *
      * Handles various response formats that Daytona might return.
      */
     public static function parse(array $result): CommandResponse
@@ -31,7 +31,7 @@ class CommandResponseParser
                 );
             }
         }
-        
+
         // Standard format
         return new CommandResponse(
             exitCode: $result['exitCode'] ?? $result['exit_code'] ?? 0,

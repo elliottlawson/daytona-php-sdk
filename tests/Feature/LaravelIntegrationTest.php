@@ -1,9 +1,9 @@
 <?php
 
 use ElliottLawson\Daytona\DaytonaClient;
-use ElliottLawson\Daytona\Sandbox;
 use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
+use ElliottLawson\Daytona\Sandbox;
 use Illuminate\Support\Facades\Http;
 
 it('can resolve client from Laravel container', function () {
@@ -26,7 +26,7 @@ it('uses ENV variables through config', function () {
     config([
         'daytona.api_url' => 'https://custom.daytona.io',
         'daytona.api_key' => 'custom-test-key',
-        'daytona.organization_id' => 'test-org-123'
+        'daytona.organization_id' => 'test-org-123',
     ]);
 
     // Mock the HTTP request to verify the correct values are used

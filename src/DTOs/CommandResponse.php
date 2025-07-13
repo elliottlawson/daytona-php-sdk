@@ -35,16 +35,16 @@ class CommandResponse
 
     public function failed(): bool
     {
-        return !$this->isSuccessful();
+        return ! $this->isSuccessful();
     }
 
     public function hasOutput(): bool
     {
-        return !empty($this->output);
+        return ! empty($this->output);
     }
 
     public function hasErrorOutput(): bool
     {
-        return !empty($this->errorOutput);
+        return ! empty($this->errorOutput);
     }
 }

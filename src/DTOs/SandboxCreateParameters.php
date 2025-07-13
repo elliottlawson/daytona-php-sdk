@@ -15,19 +15,19 @@ class SandboxCreateParameters
         public ?int $autoArchiveInterval = null,
         public ?int $autoDeleteInterval = null,
         public ?array $volumes = null,
-        
+
         // Snapshot-specific
         public ?string $snapshot = null,
-        
+
         // Image-specific
         public ?string $image = null,
-        
+
         // Resources (for image-based creation)
         public ?int $cpu = null,
         public ?int $gpu = null,
         public ?int $memory = null,
         public ?int $disk = null,
-        
+
         // Additional fields from API response
         public ?string $target = null,
         public ?string $class = null,
@@ -36,12 +36,12 @@ class SandboxCreateParameters
     public function toArray(): array
     {
         $data = [];
-        
+
         // Map envVars to env for API compatibility
         if ($this->envVars !== null) {
             $data['env'] = $this->envVars;
         }
-        
+
         // Add other fields
         $fields = [
             'user' => $this->user,
@@ -57,7 +57,7 @@ class SandboxCreateParameters
             'target' => $this->target,
             'class' => $this->class,
         ];
-        
+
         // API restriction: Cannot specify resources when using a snapshot
         if ($this->snapshot === null) {
             $fields['cpu'] = $this->cpu;
@@ -65,13 +65,13 @@ class SandboxCreateParameters
             $fields['memory'] = $this->memory;
             $fields['disk'] = $this->disk;
         }
-        
+
         foreach ($fields as $key => $value) {
             if ($value !== null) {
                 $data[$key] = $value;
             }
         }
-        
+
         return $data;
     }
 }

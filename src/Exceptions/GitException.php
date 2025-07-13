@@ -19,6 +19,7 @@ class GitException extends Exception
     public static function addFailed(array $files, string $message, ?\Throwable $previous = null): self
     {
         $fileList = implode(', ', $files);
+
         return new self("Failed to add files to Git [{$fileList}]: {$message}", 0, $previous);
     }
 

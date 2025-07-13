@@ -37,6 +37,6 @@ class GitCommit
             'date' => $this->date,
             'shortHash' => $this->shortHash,
             'files' => $this->files,
-        ], fn($value) => $value !== null);
+        ], fn ($value) => $value !== null);
     }
 }

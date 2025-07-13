@@ -11,11 +11,11 @@ return [
     */
 
     'api_url' => env('DAYTONA_API_URL', 'https://app.daytona.io/api'),
-    
+
     'api_key' => env('DAYTONA_API_KEY'),
-    
+
     'organization_id' => env('DAYTONA_ORGANIZATION_ID'),
-    
+
     /*
     |--------------------------------------------------------------------------
     | Default Sandbox Configuration
@@ -24,7 +24,7 @@ return [
     | Default settings for new sandboxes.
     |
     */
-    
+
     'defaults' => [
         'snapshot' => env('DAYTONA_DEFAULT_SNAPSHOT'),
         'memory' => env('DAYTONA_DEFAULT_MEMORY', 2),
@@ -32,7 +32,7 @@ return [
         'cpu' => env('DAYTONA_DEFAULT_CPU', 1),
         'auto_stop_interval' => env('DAYTONA_AUTO_STOP_INTERVAL', 30),
     ],
-    
+
     /*
     |--------------------------------------------------------------------------
     | HTTP Client Configuration
@@ -41,7 +41,7 @@ return [
     | Configure timeouts and other HTTP client settings.
     |
     */
-    
+
     'http' => [
         'timeout' => env('DAYTONA_HTTP_TIMEOUT', 30),
         'retry_times' => env('DAYTONA_HTTP_RETRY_TIMES', 3),

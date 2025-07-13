@@ -5,7 +5,7 @@ namespace ElliottLawson\Daytona\DTOs;
 class GitBranchesResponse
 {
     /**
-     * @param string[] $branches
+     * @param  string[]  $branches
      */
     public function __construct(
         public readonly array $branches,
@@ -25,7 +25,7 @@ class GitBranchesResponse
         return array_filter([
             'branches' => $this->branches,
             'currentBranch' => $this->currentBranch,
-        ], fn($value) => $value !== null);
+        ], fn ($value) => $value !== null);
     }
 
     public function hasBranch(string $branchName): bool

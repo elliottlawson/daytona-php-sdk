@@ -85,6 +85,6 @@ class SandboxResponse
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
             'runnerDomain' => $this->runnerDomain,
-        ], fn($value) => $value !== null);
+        ], fn ($value) => $value !== null);
     }
 }

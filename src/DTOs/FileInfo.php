@@ -34,6 +34,6 @@ class FileInfo
             'size' => $this->size,
             'modifiedAt' => $this->modifiedAt,
             'permissions' => $this->permissions,
-        ], fn($value) => $value !== null);
+        ], fn ($value) => $value !== null);
     }
 }

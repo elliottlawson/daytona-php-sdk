@@ -8,9 +8,9 @@ it('parses standard response format', function () {
         'stdout' => 'Hello World',
         'stderr' => '',
     ];
-    
+
     $parsed = CommandResponseParser::parse($response);
-    
+
     expect($parsed->exitCode)->toBe(0);
     expect($parsed->output)->toBe('Hello World');
     expect($parsed->errorOutput)->toBe('');
@@ -22,9 +22,9 @@ it('parses alternative field names', function () {
         'output' => 'Command output',
         'error' => 'Error message',
     ];
-    
+
     $parsed = CommandResponseParser::parse($response);
-    
+
     expect($parsed->exitCode)->toBe(1);
     expect($parsed->output)->toBe('Command output');
     expect($parsed->errorOutput)->toBe('Error message');
@@ -39,9 +39,9 @@ it('parses nested result format', function () {
             'stderr' => 'Nested error',
         ],
     ];
-    
+
     $parsed = CommandResponseParser::parse($response);
-    
+
     expect($parsed->exitCode)->toBe(0);
     expect($parsed->output)->toBe('Nested output');
     expect($parsed->errorOutput)->toBe('Nested error');
@@ -52,9 +52,9 @@ it('parses string result with -1 exit code', function () {
         'exitCode' => -1,
         'result' => 'Simple string output',
     ];
-    
+
     $parsed = CommandResponseParser::parse($response);
-    
+
     expect($parsed->exitCode)->toBe(0);
     expect($parsed->output)->toBe('Simple string output');
     expect($parsed->errorOutput)->toBe('');
@@ -65,9 +65,9 @@ it('handles result field as primary output', function () {
         'exitCode' => 0,
         'result' => 'Result field output',
     ];
-    
+
     $parsed = CommandResponseParser::parse($response);
-    
+
     expect($parsed->exitCode)->toBe(0);
     expect($parsed->output)->toBe('Result field output');
     expect($parsed->errorOutput)->toBe('');
@@ -75,9 +75,9 @@ it('handles result field as primary output', function () {
 
 it('provides defaults for missing fields', function () {
     $response = [];
-    
+
     $parsed = CommandResponseParser::parse($response);
-    
+
     expect($parsed->exitCode)->toBe(0);
     expect($parsed->output)->toBe('');
     expect($parsed->errorOutput)->toBe('');
@@ -89,18 +89,18 @@ it('provides helpful methods on CommandResponse', function () {
         'stdout' => 'Success',
         'stderr' => '',
     ]);
-    
+
     expect($successResponse->isSuccessful())->toBeTrue();
     expect($successResponse->failed())->toBeFalse();
     expect($successResponse->hasOutput())->toBeTrue();
     expect($successResponse->hasErrorOutput())->toBeFalse();
-    
+
     $failureResponse = CommandResponseParser::parse([
         'exitCode' => 1,
         'stdout' => '',
         'stderr' => 'Error occurred',
     ]);
-    
+
     expect($failureResponse->isSuccessful())->toBeFalse();
     expect($failureResponse->failed())->toBeTrue();
     expect($failureResponse->hasOutput())->toBeFalse();

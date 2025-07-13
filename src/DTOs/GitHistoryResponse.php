@@ -5,7 +5,7 @@ namespace ElliottLawson\Daytona\DTOs;
 class GitHistoryResponse
 {
     /**
-     * @param GitCommit[] $commits
+     * @param  GitCommit[]  $commits
      */
     public function __construct(
         public readonly array $commits,
@@ -14,7 +14,7 @@ class GitHistoryResponse
     public static function fromArray(array $data): self
     {
         $commits = array_map(
-            fn(array $commit) => GitCommit::fromArray($commit),
+            fn (array $commit) => GitCommit::fromArray($commit),
             $data['commits'] ?? $data
         );
 
@@ -25,7 +25,7 @@ class GitHistoryResponse
     {
         return [
             'commits' => array_map(
-                fn(GitCommit $commit) => $commit->toArray(),
+                fn (GitCommit $commit) => $commit->toArray(),
                 $this->commits
             ),
         ];

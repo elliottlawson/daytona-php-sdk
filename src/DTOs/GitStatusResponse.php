@@ -5,9 +5,9 @@ namespace ElliottLawson\Daytona\DTOs;
 class GitStatusResponse
 {
     /**
-     * @param string[] $staged
-     * @param string[] $unstaged
-     * @param string[] $untracked
+     * @param  string[]  $staged
+     * @param  string[]  $unstaged
+     * @param  string[]  $untracked
      */
     public function __construct(
         public readonly array $staged,
@@ -42,16 +42,16 @@ class GitStatusResponse
             'clean' => $this->clean,
             'ahead' => $this->ahead,
             'behind' => $this->behind,
-        ], fn($value) => $value !== null);
+        ], fn ($value) => $value !== null);
     }
 
     public function hasChanges(): bool
     {
-        return !empty($this->staged) || !empty($this->unstaged) || !empty($this->untracked);
+        return ! empty($this->staged) || ! empty($this->unstaged) || ! empty($this->untracked);
     }
 
     public function isClean(): bool
     {
-        return $this->clean ?? !$this->hasChanges();
+        return $this->clean ?? ! $this->hasChanges();
     }
 }
