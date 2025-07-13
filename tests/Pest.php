@@ -2,4 +2,5 @@
 
 use ElliottLawson\Daytona\Tests\TestCase;
 
-uses(TestCase::class)->in(__DIR__);
+// Use TestCase for unit tests
+uses(TestCase::class)->in('Feature');

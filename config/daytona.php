@@ -10,7 +10,7 @@ return [
     |
     */
 
-    'api_url' => env('DAYTONA_API_URL', 'https://api.daytona.io'),
+    'api_url' => env('DAYTONA_API_URL', 'https://app.daytona.io/api'),
     
     'api_key' => env('DAYTONA_API_KEY'),
     
@@ -26,7 +26,7 @@ return [
     */
     
     'defaults' => [
-        'snapshot' => env('DAYTONA_DEFAULT_SNAPSHOT', 'laravel-php84'),
+        'snapshot' => env('DAYTONA_DEFAULT_SNAPSHOT'),
         'memory' => env('DAYTONA_DEFAULT_MEMORY', 2),
         'disk' => env('DAYTONA_DEFAULT_DISK', 2),
         'cpu' => env('DAYTONA_DEFAULT_CPU', 1),

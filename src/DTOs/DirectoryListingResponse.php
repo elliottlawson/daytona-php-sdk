@@ -13,9 +13,12 @@ class DirectoryListingResponse
 
     public static function fromArray(array $data): self
     {
+        // Handle both direct array of files and files nested under 'files' key
+        $filesData = isset($data['files']) ? $data['files'] : $data;
+        
         $files = array_map(
             fn(array $file) => FileInfo::fromArray($file),
-            $data
+            $filesData
         );
 
         return new self(files: $files);

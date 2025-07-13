@@ -2,7 +2,7 @@
 
 namespace ElliottLawson\Daytona\Tests;
 
-use ElliottLawson\Daytona\DaytonaServiceProvider;
+use ElliottLawson\Daytona\ServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class TestCase extends Orchestra
@@ -10,13 +10,12 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
-            DaytonaServiceProvider::class,
+            ServiceProvider::class,
         ];
     }
 
     protected function getEnvironmentSetUp($app): void
     {
-        config()->set('daytona.api_url', 'https://api.daytona.io');
         config()->set('daytona.api_key', 'test-key');
     }
 }

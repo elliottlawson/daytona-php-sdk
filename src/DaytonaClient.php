@@ -2,84 +2,86 @@
 
 namespace ElliottLawson\Daytona;
 
-use ElliottLawson\Daytona\Exceptions\DaytonaException;
+use ElliottLawson\Daytona\CommandResponseParser;
+use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
+use ElliottLawson\Daytona\Exceptions\ApiException;
+use ElliottLawson\Daytona\Exceptions\CommandExecutionException;
+use ElliottLawson\Daytona\Exceptions\ConfigurationException;
+use ElliottLawson\Daytona\Exceptions\FileSystemException;
+use ElliottLawson\Daytona\Exceptions\GitException;
+use ElliottLawson\Daytona\Exceptions\SandboxException;
 use ElliottLawson\Daytona\DTOs\CommandResponse;
+use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\DTOs\DirectoryListingResponse;
 use ElliottLawson\Daytona\DTOs\GitBranchesResponse;
 use ElliottLawson\Daytona\DTOs\GitHistoryResponse;
 use ElliottLawson\Daytona\DTOs\GitStatusResponse;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class DaytonaClient
 {
-    private string $baseUrl;
 
-    private string $token;
-
-    private ?string $organizationId;
-
-    public function __construct(array $config)
-    {
-        $this->baseUrl = $config['api_url'] ?? 'https://api.daytona.io';
-        $this->token = $config['api_key'] ?? '';
-        $this->organizationId = $config['organization_id'] ?? null;
-
-        if (empty($this->token)) {
-            throw new DaytonaException('Daytona API token is not configured');
+    public function __construct(
+        private Config $config,
+    ) {
+        if (empty($this->config->apiKey)) {
+            throw ConfigurationException::missingApiKey();
         }
     }
 
     private function client()
     {
-        $client = Http::withToken($this->token)
-            ->baseUrl($this->baseUrl)
+        $client = Http::withToken($this->config->apiKey)
+            ->baseUrl($this->config->apiUrl)
             ->timeout(30)
             ->acceptJson();
 
-        // Add organization header if configured
-        if ($this->organizationId) {
+        if ($this->config->organizationId) {
             $client->withHeaders([
-                'X-Daytona-Organization-ID' => $this->organizationId,
+                'X-Daytona-Organization-ID' => $this->config->organizationId,
             ]);
         }
 
         return $client;
     }
 
-    public function createSandbox(array $params): DaytonaSandbox
+    public function createSandbox(SandboxCreateParameters $params): Sandbox
     {
         try {
-            Log::info('Creating Daytona sandbox', ['params' => $params]);
+            Log::info('Creating Daytona sandbox', ['params' => $params->toArray()]);
 
-            $response = $this->client()->post('sandbox', $params);
+            $response = $this->client()->post('sandbox', $params->toArray());
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to create sandbox: '.$response->body());
+                throw ApiException::fromResponse($response, 'create sandbox');
             }
 
             $data = $response->json();
 
             if (! isset($data['id'])) {
-                throw new DaytonaException('Invalid response from Daytona API: missing sandbox ID');
+                throw SandboxException::invalidResponse('missing sandbox ID');
             }
 
             Log::info('Daytona sandbox created', [
                 'sandboxId' => $data['id'],
-                'status' => $data['status'] ?? 'unknown',
                 'state' => $data['state'] ?? 'unknown',
                 'response' => $data,
             ]);
 
-            return new DaytonaSandbox($data['id'], $this);
+            $sandboxResponse = SandboxResponse::fromArray($data);
+            $sandbox = new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
+            
+            return $sandbox;
         } catch (RequestException $e) {
             Log::error('Failed to create Daytona sandbox', [
                 'error' => $e->getMessage(),
-                'params' => $params,
+                'params' => $params->toArray(),
             ]);
-            throw new DaytonaException('Failed to create sandbox: '.$e->getMessage(), 0, $e);
+            throw SandboxException::creationFailed($e->getMessage(), $e);
         }
     }
 
@@ -91,7 +93,7 @@ class DaytonaClient
             $response = $this->client()->delete("sandbox/{$sandboxId}");
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to delete sandbox: '.$response->body());
+                throw ApiException::fromResponse($response, 'delete sandbox');
             }
 
             Log::info('Daytona sandbox deleted', ['sandboxId' => $sandboxId]);
@@ -100,7 +102,7 @@ class DaytonaClient
                 'sandboxId' => $sandboxId,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to delete sandbox: '.$e->getMessage(), 0, $e);
+            throw SandboxException::deletionFailed($sandboxId, $e->getMessage(), $e);
         }
     }
 
@@ -112,7 +114,7 @@ class DaytonaClient
             $response = $this->client()->get("sandbox/{$sandboxId}");
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to get sandbox details: '.$response->body());
+                throw ApiException::fromResponse($response, 'get sandbox details');
             }
 
             $sandbox = $response->json();
@@ -130,7 +132,10 @@ class DaytonaClient
                 'sandboxId' => $sandboxId,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to get sandbox details: '.$e->getMessage(), 0, $e);
+            if ($e->response) {
+                throw ApiException::fromResponse($e->response, 'get sandbox details');
+            }
+            throw ApiException::networkError('get sandbox details', $e);
         }
     }
 
@@ -142,7 +147,7 @@ class DaytonaClient
             $response = $this->client()->post("sandbox/{$sandboxId}/start");
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to start sandbox: '.$response->body());
+                throw ApiException::fromResponse($response, 'start sandbox');
             }
 
             Log::info('Daytona sandbox started', ['sandboxId' => $sandboxId]);
@@ -151,7 +156,7 @@ class DaytonaClient
                 'sandboxId' => $sandboxId,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to start sandbox: '.$e->getMessage(), 0, $e);
+            throw SandboxException::startFailed($sandboxId, $e->getMessage(), $e);
         }
     }
 
@@ -163,7 +168,7 @@ class DaytonaClient
             $response = $this->client()->post("sandbox/{$sandboxId}/stop");
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to stop sandbox: '.$response->body());
+                throw ApiException::fromResponse($response, 'stop sandbox');
             }
 
             Log::info('Daytona sandbox stopped', ['sandboxId' => $sandboxId]);
@@ -172,7 +177,7 @@ class DaytonaClient
                 'sandboxId' => $sandboxId,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to stop sandbox: '.$e->getMessage(), 0, $e);
+            throw SandboxException::stopFailed($sandboxId, $e->getMessage(), $e);
         }
     }
 
@@ -189,9 +194,10 @@ class DaytonaClient
                 'command' => $command,
                 'cwd' => $cwd,
             ]);
+            ray($response, $response->body(), $response->json(), $response->object());
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to execute command: '.$response->body());
+                throw ApiException::fromResponse($response, 'execute command');
             }
 
             $result = $response->json();
@@ -210,7 +216,7 @@ class DaytonaClient
                 'command' => $command,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to execute command: '.$e->getMessage(), 0, $e);
+            throw CommandExecutionException::executionFailed($command, $e->getMessage(), $e);
         }
     }
 
@@ -227,7 +233,7 @@ class DaytonaClient
             ]);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to read file: '.$response->body());
+                throw ApiException::fromResponse($response, 'read file');
             }
 
             return $response->body();
@@ -237,7 +243,7 @@ class DaytonaClient
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to read file: '.$e->getMessage(), 0, $e);
+            throw FileSystemException::readFailed($path, $e->getMessage(), $e);
         }
     }
 
@@ -263,7 +269,7 @@ class DaytonaClient
                 ]);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to write file: '.$response->body());
+                throw ApiException::fromResponse($response, 'write file');
             }
 
             Log::debug('File written successfully', [
@@ -276,7 +282,7 @@ class DaytonaClient
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to write file: '.$e->getMessage(), 0, $e);
+            throw FileSystemException::writeFailed($path, $e->getMessage(), $e);
         }
     }
 
@@ -293,7 +299,7 @@ class DaytonaClient
             ]);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to list directory: '.$response->body());
+                throw ApiException::fromResponse($response, 'list directory');
             }
 
             return DirectoryListingResponse::fromArray($response->json());
@@ -303,7 +309,7 @@ class DaytonaClient
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to list directory: '.$e->getMessage(), 0, $e);
+            throw FileSystemException::listDirectoryFailed($path, $e->getMessage(), $e);
         }
     }
 
@@ -318,7 +324,7 @@ class DaytonaClient
             $response = $this->client()->delete("toolbox/{$sandboxId}/toolbox/files?path=".urlencode($path));
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to delete file: '.$response->body());
+                throw ApiException::fromResponse($response, 'delete file');
             }
 
             Log::debug('File deleted successfully', [
@@ -331,7 +337,7 @@ class DaytonaClient
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to delete file: '.$e->getMessage(), 0, $e);
+            throw FileSystemException::deleteFailed($path, $e->getMessage(), $e);
         }
     }
 
@@ -352,7 +358,7 @@ class DaytonaClient
             if (str_contains($e->getMessage(), '404') || str_contains($e->getMessage(), 'not found')) {
                 return false;
             }
-            throw new DaytonaException('Failed to check file existence: '.$e->getMessage(), 0, $e);
+            throw FileSystemException::checkExistenceFailed($path, $e->getMessage(), $e);
         }
     }
 
@@ -387,7 +393,7 @@ class DaytonaClient
             $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/clone", $payload);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to clone repository: '.$response->body());
+                throw ApiException::fromResponse($response, 'clone repository');
             }
 
             Log::info('Repository cloned successfully', [
@@ -400,7 +406,7 @@ class DaytonaClient
                 'url' => $url,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to clone repository: '.$e->getMessage(), 0, $e);
+            throw GitException::cloneFailed($url, $e->getMessage(), $e);
         }
     }
 
@@ -420,7 +426,7 @@ class DaytonaClient
             ]);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to list branches: '.$response->body());
+                throw ApiException::fromResponse($response, 'list branches');
             }
 
             return GitBranchesResponse::fromArray($response->json());
@@ -430,7 +436,7 @@ class DaytonaClient
                 'repoPath' => $repoPath,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to list branches: '.$e->getMessage(), 0, $e);
+            throw GitException::branchListFailed($repoPath, $e->getMessage(), $e);
         }
     }
 
@@ -452,7 +458,7 @@ class DaytonaClient
             ]);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to add files to Git: '.$response->body());
+                throw ApiException::fromResponse($response, 'add files to Git');
             }
         } catch (RequestException $e) {
             Log::error('Failed to add files to Git in Daytona sandbox', [
@@ -460,7 +466,7 @@ class DaytonaClient
                 'repoPath' => $repoPath,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to add files to Git: '.$e->getMessage(), 0, $e);
+            throw GitException::addFailed($filePaths, $e->getMessage(), $e);
         }
     }
 
@@ -484,7 +490,7 @@ class DaytonaClient
             ]);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to commit changes: '.$response->body());
+                throw ApiException::fromResponse($response, 'commit changes');
             }
         } catch (RequestException $e) {
             Log::error('Failed to commit changes in Daytona sandbox', [
@@ -492,7 +498,7 @@ class DaytonaClient
                 'repoPath' => $repoPath,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to commit changes: '.$e->getMessage(), 0, $e);
+            throw GitException::commitFailed($message, $e->getMessage(), $e);
         }
     }
 
@@ -519,7 +525,7 @@ class DaytonaClient
             $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/push", $payload);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to push changes: '.$response->body());
+                throw ApiException::fromResponse($response, 'push changes');
             }
 
             Log::info('Changes pushed successfully', [
@@ -532,7 +538,7 @@ class DaytonaClient
                 'repoPath' => $repoPath,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to push changes: '.$e->getMessage(), 0, $e);
+            throw GitException::pushFailed($e->getMessage(), $e);
         }
     }
 
@@ -552,7 +558,7 @@ class DaytonaClient
             ]);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to get Git status: '.$response->body());
+                throw ApiException::fromResponse($response, 'get Git status');
             }
 
             return GitStatusResponse::fromArray($response->json());
@@ -562,7 +568,7 @@ class DaytonaClient
                 'repoPath' => $repoPath,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to get Git status: '.$e->getMessage(), 0, $e);
+            throw GitException::statusFailed($repoPath, $e->getMessage(), $e);
         }
     }
 
@@ -582,7 +588,7 @@ class DaytonaClient
             ]);
 
             if (! $response->successful()) {
-                throw new DaytonaException('Failed to get Git history: '.$response->body());
+                throw ApiException::fromResponse($response, 'get Git history');
             }
 
             return GitHistoryResponse::fromArray($response->json());
@@ -592,7 +598,26 @@ class DaytonaClient
                 'repoPath' => $repoPath,
                 'error' => $e->getMessage(),
             ]);
-            throw new DaytonaException('Failed to get Git history: '.$e->getMessage(), 0, $e);
+            throw GitException::historyFailed($repoPath, $e->getMessage(), $e);
         }
+    }
+
+    /**
+     * Get a Sandbox instance by ID.
+     * This fetches the latest data and returns a Sandbox object.
+     */
+    public function getSandboxById(string $sandboxId): Sandbox
+    {
+        $response = $this->getSandbox($sandboxId);
+        return new Sandbox($sandboxId, $this, $response);
+    }
+    
+    /**
+     * Create a Sandbox instance from a SandboxResponse.
+     * This is useful when you need the behavioral methods of Sandbox.
+     */
+    public function sandboxFromResponse(SandboxResponse $response): Sandbox
+    {
+        return new Sandbox($response->id, $this, $response);
     }
 }
