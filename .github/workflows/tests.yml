@@ -7,6 +7,27 @@ on:
     branches: [ master, main ]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo
+          coverage: none
+          
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction
+        
+      - name: Run Pint
+        run: vendor/bin/pint --test
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -24,7 +45,7 @@ jobs:
             pest: 3.*
             phpunit: 11.*
           - laravel: 12.*
-            testbench: 9.*
+            testbench: 10.*
             pest: 3.*
             phpunit: 11.*
         exclude:

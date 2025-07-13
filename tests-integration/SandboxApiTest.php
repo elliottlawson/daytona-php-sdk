@@ -7,7 +7,6 @@ use ElliottLawson\Daytona\Sandbox;
 uses(\Tests\IntegrationTestCase::class);
 
 beforeEach(function () {
-    ray()->newScreen('Sandbox API Test');
     $this->client = resolve(DaytonaClient::class);
 });
 
@@ -22,8 +21,6 @@ it('creates a sandbox with minimal parameters and validates response structure',
     expect($sandbox->getState())->toBeIn(['started', 'starting', 'stopped', 'stopping']);
     expect($sandbox->getCreatedAt())->toBeString();
     expect($sandbox->getUpdatedAt())->toBeString();
-
-    ray($sandbox->exec('echo "Hello from sandbox"'));
 
     $sandbox->delete();
 });
