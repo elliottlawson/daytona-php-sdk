@@ -206,7 +206,7 @@ class DaytonaClient
             ]);
 
             // Calculate HTTP timeout based on command timeout + buffer
-            $httpTimeout = $timeout ? (int)ceil($timeout / 1000) + 10 : 300; // Convert ms to seconds + buffer
+            $httpTimeout = $timeout ? (int) ceil($timeout / 1000) + 10 : 300; // Convert ms to seconds + buffer
             $response = $this->client($httpTimeout)->post("toolbox/{$sandboxId}/toolbox/process/execute", $payload);
 
             if (! $response->successful()) {
@@ -393,7 +393,7 @@ class DaytonaClient
 
             $payload = [
                 'url' => $url,
-                //'path' => $path,
+                // 'path' => $path,
             ];
 
             if ($path) {

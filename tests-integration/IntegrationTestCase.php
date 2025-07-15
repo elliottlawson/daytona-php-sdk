@@ -10,9 +10,9 @@ class IntegrationTestCase extends Orchestra
     protected function getBasePath(): string
     {
         // Tell Orchestra where to find the package root
-        return __DIR__ . '/..';
+        return __DIR__.'/..';
     }
-    
+
     protected function getPackageProviders($app): array
     {
         return [

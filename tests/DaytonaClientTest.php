@@ -73,7 +73,7 @@ it('passes command timeout to HTTP client with proper conversion', function () {
 
     // Test with 60 second timeout (60000ms)
     Http::preventStrayRequests();
-    
+
     $response = $client->executeCommand('sandbox-123', 'long-running-command', null, null, 60000);
 
     expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
@@ -111,6 +111,6 @@ it('uses default timeout when no command timeout is specified', function () {
     // Verify the request was made without timeout in payload
     Http::assertSent(function ($request) {
         return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/process/execute') &&
-               !isset($request['timeout']);
+               ! isset($request['timeout']);
     });
 });

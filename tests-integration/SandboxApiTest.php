@@ -7,11 +7,11 @@ use ElliottLawson\Daytona\Sandbox;
 
 beforeEach(function () {
     $apiKey = env('DAYTONA_API_KEY');
-    
-    if (!$apiKey) {
+
+    if (! $apiKey) {
         $this->markTestSkipped('DAYTONA_API_KEY environment variable is not set');
     }
-    
+
     $this->client = new DaytonaClient(new Config(
         apiKey: $apiKey,
         apiUrl: env('DAYTONA_API_URL', 'https://app.daytona.io/api'),
@@ -28,7 +28,7 @@ it('can create a sandbox', function () {
     $wdr = '/home/daytona/laravel';
 
     $sandbox->gitClone(
-        url:'https://github.com/elliottlawson/test-repo.git',
+        url: 'https://github.com/elliottlawson/test-repo.git',
         path: '/home/daytona/laravel',
         branch: 'master',
         username: env('GITHUB_USERNAME'),
@@ -48,7 +48,7 @@ it('can create a sandbox', function () {
         command: "bash -c 'git status'",
         cwd: $wdr,
     ));
-    //ray($sandbox->readFile($wdr.'/test.txt'));
+    // ray($sandbox->readFile($wdr.'/test.txt'));
     $sandbox->gitCommit(
         repoPath: $wdr,
         message: 'Add new test file',
