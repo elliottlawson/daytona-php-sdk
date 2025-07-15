@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use ElliottLawson\Daytona\ServiceProvider;
+use ElliottLawson\Daytona\DaytonaServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class IntegrationTestCase extends Orchestra
@@ -16,7 +16,7 @@ class IntegrationTestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
-            ServiceProvider::class,
+            DaytonaServiceProvider::class,
         ];
     }
 
