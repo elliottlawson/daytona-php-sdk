@@ -6,7 +6,7 @@ use ElliottLawson\Daytona\DTOs\Config;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider as BaseServiceProvider;
 
-class ServiceProvider extends BaseServiceProvider
+class DaytonaServiceProvider extends BaseServiceProvider
 {
     /**
      * Register services.

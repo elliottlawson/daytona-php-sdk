@@ -21,7 +21,7 @@ composer require elliottlawson/daytona-php-sdk
 
 2. Publish the configuration file:
 ```bash
-php artisan vendor:publish --provider="ElliottLawson\Daytona\ServiceProvider" --tag="daytona-config"
+php artisan vendor:publish --provider="ElliottLawson\Daytona\DaytonaServiceProvider" --tag="daytona-config"
 ```
 
 3. Add your Daytona credentials to your `.env` file:
