@@ -1,6 +1,7 @@
 <?php
 
 use ElliottLawson\Daytona\DaytonaClient;
+use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\Exceptions\ConfigurationException;
 use Illuminate\Support\Facades\Http;
@@ -76,7 +77,7 @@ it('passes command timeout to HTTP client with proper conversion', function () {
 
     $response = $client->executeCommand('sandbox-123', 'long-running-command', null, null, 60000);
 
-    expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
+    expect($response)->toBeInstanceOf(CommandResponse::class);
     expect($response->exitCode)->toBe(0);
     expect($response->output)->toBe('Command output');
 
@@ -105,7 +106,7 @@ it('uses default timeout when no command timeout is specified', function () {
 
     $response = $client->executeCommand('sandbox-123', 'quick-command');
 
-    expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
+    expect($response)->toBeInstanceOf(CommandResponse::class);
     expect($response->exitCode)->toBe(0);
 
     // Verify the request was made without timeout in payload
