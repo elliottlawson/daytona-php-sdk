@@ -3,6 +3,7 @@
 use ElliottLawson\Daytona\DaytonaClient;
 use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\Exceptions\ConfigurationException;
+use Illuminate\Support\Facades\Http;
 
 it('can be instantiated with config', function () {
     $config = new Config(
@@ -52,4 +53,64 @@ it('can be resolved from container in Laravel', function () {
     $client = app(DaytonaClient::class);
 
     expect($client)->toBeInstanceOf(DaytonaClient::class);
+});
+
+it('passes command timeout to HTTP client with proper conversion', function () {
+    Http::fake([
+        '*/toolbox/*/toolbox/process/execute' => Http::response([
+            'exitCode' => 0,
+            'stdout' => 'Command output',
+            'stderr' => '',
+        ], 200),
+    ]);
+
+    $config = new Config(
+        apiKey: 'test-key',
+        apiUrl: 'https://api.daytona.io',
+        organizationId: 'test-org'
+    );
+    $client = new DaytonaClient($config);
+
+    // Test with 60 second timeout (60000ms)
+    Http::preventStrayRequests();
+
+    $response = $client->executeCommand('sandbox-123', 'long-running-command', null, null, 60000);
+
+    expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
+    expect($response->exitCode)->toBe(0);
+    expect($response->output)->toBe('Command output');
+
+    // Verify the HTTP request was made
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/process/execute') &&
+               $request['timeout'] === 60000;
+    });
+});
+
+it('uses default timeout when no command timeout is specified', function () {
+    Http::fake([
+        '*/toolbox/*/toolbox/process/execute' => Http::response([
+            'exitCode' => 0,
+            'stdout' => 'Command output',
+            'stderr' => '',
+        ], 200),
+    ]);
+
+    $config = new Config(
+        apiKey: 'test-key',
+        apiUrl: 'https://api.daytona.io',
+        organizationId: 'test-org'
+    );
+    $client = new DaytonaClient($config);
+
+    $response = $client->executeCommand('sandbox-123', 'quick-command');
+
+    expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
+    expect($response->exitCode)->toBe(0);
+
+    // Verify the request was made without timeout in payload
+    Http::assertSent(function ($request) {
+        return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/process/execute') &&
+               ! isset($request['timeout']);
+    });
 });

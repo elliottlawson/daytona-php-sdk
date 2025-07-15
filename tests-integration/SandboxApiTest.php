@@ -1,13 +1,75 @@
 <?php
 
 use ElliottLawson\Daytona\DaytonaClient;
+use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
 use ElliottLawson\Daytona\Sandbox;
 
-uses(\Tests\IntegrationTestCase::class);
-
 beforeEach(function () {
-    $this->client = resolve(DaytonaClient::class);
+    $apiKey = env('DAYTONA_API_KEY');
+
+    if (! $apiKey) {
+        $this->markTestSkipped('DAYTONA_API_KEY environment variable is not set');
+    }
+
+    $this->client = new DaytonaClient(new Config(
+        apiKey: $apiKey,
+        apiUrl: env('DAYTONA_API_URL', 'https://app.daytona.io/api'),
+        organizationId: env('DAYTONA_ORGANIZATION_ID'),
+    ));
+});
+
+it('can create a sandbox', function () {
+    ray()->newScreen('Sandbox Creation');
+    $sandbox = $this->client->createSandbox(new SandboxCreateParameters);
+
+    ray($sandbox);
+
+    $wdr = '/home/daytona/laravel';
+
+    $sandbox->gitClone(
+        url: 'https://github.com/elliottlawson/test-repo.git',
+        path: '/home/daytona/laravel',
+        branch: 'master',
+        username: env('GITHUB_USERNAME'),
+        password: env('GITHUB_TOKEN'),
+    );
+    ray($sandbox->exec("bash -c 'gh", cwd: $wdr));
+    ray($sandbox->exec("bash -c 'git checkout -b test-branch'", cwd: $wdr));
+    $sandbox->writeFile(
+        path: $wdr.'/test2.txt',
+        content: 'Hello from Daytona2!',
+    );
+    $sandbox->gitAdd(
+        repoPath: $wdr,
+        filePaths: ['test2.txt'],
+    );
+    ray($sandbox->exec(
+        command: "bash -c 'git status'",
+        cwd: $wdr,
+    ));
+    // ray($sandbox->readFile($wdr.'/test.txt'));
+    $sandbox->gitCommit(
+        repoPath: $wdr,
+        message: 'Add new test file',
+        authorName: 'Elliott Lawson',
+        authorEmail: 'elliott@example.com',
+    );
+    ray($sandbox->exec(
+        command: "bash -c 'git status'",
+        cwd: $wdr,
+    ));
+    $sandbox->gitPush(
+        repoPath: $wdr,
+        username: env('GITHUB_USERNAME'),
+        password: env('GITHUB_TOKEN'),
+    );
+    ray($sandbox->exec(
+        command: "bash -c 'git status'",
+        cwd: $wdr,
+    ));
+
+    $sandbox->delete();
 });
 
 it('creates a sandbox with minimal parameters and validates response structure', function () {
@@ -191,6 +253,46 @@ it('validates sandbox lifecycle operations', function () {
 
     $sandbox->refresh();
     expect($sandbox->getState())->toBeIn(['started', 'starting']);
+
+    $sandbox->delete();
+});
+
+it('handles long-running commands with custom timeout', function () {
+    $sandbox = $this->client->createSandbox(new SandboxCreateParameters(
+        language: 'php',
+        envVars: ['TEST_ENV' => 'timeout_test'],
+    ));
+
+    // Test a command that sleeps for 35 seconds with a 45-second timeout (45000ms)
+    // This would fail with the default 30-second HTTP timeout
+    $response = $sandbox->exec(
+        command: 'sleep 35 && echo "Command completed after 35 seconds"',
+        timeout: 45000 // 45 seconds in milliseconds
+    );
+
+    expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
+    expect($response->isSuccessful())->toBeTrue();
+    expect($response->output)->toContain('Command completed after 35 seconds');
+
+    $sandbox->delete();
+})->skip(env('SKIP_LONG_TESTS', true), 'Long-running test, set SKIP_LONG_TESTS=false to run');
+
+it('respects command timeout and fails appropriately', function () {
+    $sandbox = $this->client->createSandbox(new SandboxCreateParameters(
+        language: 'php',
+        envVars: ['TEST_ENV' => 'timeout_fail_test'],
+    ));
+
+    // Test a command that would take 10 seconds but with only 2-second timeout
+    $response = $sandbox->exec(
+        command: 'sleep 10 && echo "This should not appear"',
+        timeout: 2000 // 2 seconds in milliseconds
+    );
+
+    // The command should fail due to timeout
+    expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
+    expect($response->isSuccessful())->toBeFalse();
+    expect($response->output)->not->toContain('This should not appear');
 
     $sandbox->delete();
 });
