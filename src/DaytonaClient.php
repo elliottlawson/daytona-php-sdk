@@ -393,7 +393,6 @@ class DaytonaClient
 
             $payload = [
                 'url' => $url,
-                // 'path' => $path,
             ];
 
             if ($path) {

@@ -9,7 +9,6 @@ class IntegrationTestCase extends Orchestra
 {
     protected function getBasePath(): string
     {
-        // Tell Orchestra where to find the package root
         return __DIR__.'/..';
     }
 
@@ -22,7 +21,5 @@ class IntegrationTestCase extends Orchestra
 
     protected function getEnvironmentSetUp($app): void
     {
-        // Orchestra Testbench will automatically load .env.testing
-        // when APP_ENV is set to 'testing'
     }
 }
