@@ -30,11 +30,11 @@ class DaytonaClient
         }
     }
 
-    private function client()
+    private function client(?int $timeout = 30)
     {
         $client = Http::withToken($this->config->apiKey)
             ->baseUrl($this->config->apiUrl)
-            ->timeout(30)
+            ->timeout($timeout)
             ->acceptJson();
 
         if ($this->config->organizationId) {
@@ -205,7 +205,9 @@ class DaytonaClient
                 'timeout' => $timeout,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/process/execute", $payload);
+            // Calculate HTTP timeout based on command timeout + buffer
+            $httpTimeout = $timeout ? (int)ceil($timeout / 1000) + 10 : 300; // Convert ms to seconds + buffer
+            $response = $this->client($httpTimeout)->post("toolbox/{$sandboxId}/toolbox/process/execute", $payload);
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'execute command');
@@ -379,7 +381,7 @@ class DaytonaClient
     /**
      * Clone a Git repository into the sandbox.
      */
-    public function gitClone(string $sandboxId, string $url, ?string $branch = null, string $path = '/workspace', ?string $username = null, ?string $password = null): void
+    public function gitClone(string $sandboxId, string $url, ?string $branch = null, ?string $path = null, ?string $username = null, ?string $password = null): void
     {
         try {
             Log::info('Cloning repository in Daytona sandbox', [
@@ -391,8 +393,12 @@ class DaytonaClient
 
             $payload = [
                 'url' => $url,
-                'path' => $path,
+                //'path' => $path,
             ];
+
+            if ($path) {
+                $payload['path'] = $path;
+            }
 
             if ($branch) {
                 $payload['branch'] = $branch;
@@ -405,6 +411,7 @@ class DaytonaClient
             }
 
             $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/clone", $payload);
+            ray($response->json())->blue();
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'clone repository');

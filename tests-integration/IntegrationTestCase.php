@@ -2,27 +2,27 @@
 
 namespace Tests;
 
-use ElliottLawson\Daytona\DaytonaServiceProvider;
+use ElliottLawson\Daytona\ServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 class IntegrationTestCase extends Orchestra
 {
-    protected function setUp(): void
+    protected function getBasePath(): string
     {
-        parent::setUp();
+        // Tell Orchestra where to find the package root
+        return __DIR__ . '/..';
     }
-
-    protected function getPackageProviders($app)
+    
+    protected function getPackageProviders($app): array
     {
         return [
-            DaytonaServiceProvider::class,
+            ServiceProvider::class,
         ];
     }
 
-    public function getEnvironmentSetUp($app)
+    protected function getEnvironmentSetUp($app): void
     {
-        config()->set('daytona.api_key', env('DAYTONA_API_KEY', 'test-api-key'));
-        config()->set('daytona.api_url', env('DAYTONA_API_URL', 'https://api.daytona.io'));
-        config()->set('daytona.organization_id', env('DAYTONA_ORGANIZATION_ID', 'test-org'));
+        // Orchestra Testbench will automatically load .env.testing
+        // when APP_ENV is set to 'testing'
     }
 }

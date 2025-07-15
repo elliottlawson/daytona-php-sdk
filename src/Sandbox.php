@@ -160,7 +160,7 @@ class Sandbox
     }
 
     // Git operations
-    public function gitClone(string $url, ?string $branch = null, string $path = '/workspace', ?string $username = null, ?string $password = null): self
+    public function gitClone(string $url, ?string $branch = null, ?string $path = null, ?string $username = null, ?string $password = null): self
     {
         $this->client->gitClone($this->id, $url, $branch, $path, $username, $password);
 
