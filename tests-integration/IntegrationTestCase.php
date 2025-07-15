@@ -19,7 +19,5 @@ class IntegrationTestCase extends Orchestra
         ];
     }
 
-    protected function getEnvironmentSetUp($app): void
-    {
-    }
+    protected function getEnvironmentSetUp($app): void {}
 }
