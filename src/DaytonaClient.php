@@ -411,7 +411,6 @@ class DaytonaClient
             }
 
             $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/clone", $payload);
-            ray($response->json())->blue();
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'clone repository');

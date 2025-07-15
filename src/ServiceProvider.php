@@ -18,8 +18,6 @@ class ServiceProvider extends BaseServiceProvider
         );
 
         $this->app->singleton(Config::class, function (Application $app) {
-            ray('here');
-
             return new Config(
                 apiKey: config('daytona.api_key'),
                 apiUrl: config('daytona.api_url'),

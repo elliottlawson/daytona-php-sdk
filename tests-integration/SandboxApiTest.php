@@ -1,8 +1,10 @@
 <?php
 
 use ElliottLawson\Daytona\DaytonaClient;
+use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
+use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use ElliottLawson\Daytona\Sandbox;
 
 beforeEach(function () {
@@ -20,10 +22,7 @@ beforeEach(function () {
 });
 
 it('can create a sandbox', function () {
-    ray()->newScreen('Sandbox Creation');
     $sandbox = $this->client->createSandbox(new SandboxCreateParameters);
-
-    ray($sandbox);
 
     $wdr = '/home/daytona/laravel';
 
@@ -34,8 +33,8 @@ it('can create a sandbox', function () {
         username: env('GITHUB_USERNAME'),
         password: env('GITHUB_TOKEN'),
     );
-    ray($sandbox->exec("bash -c 'gh", cwd: $wdr));
-    ray($sandbox->exec("bash -c 'git checkout -b test-branch'", cwd: $wdr));
+    $sandbox->exec("bash -c 'gh", cwd: $wdr);
+    $sandbox->exec("bash -c 'git checkout -b test-branch'", cwd: $wdr);
     $sandbox->writeFile(
         path: $wdr.'/test2.txt',
         content: 'Hello from Daytona2!',
@@ -44,33 +43,32 @@ it('can create a sandbox', function () {
         repoPath: $wdr,
         filePaths: ['test2.txt'],
     );
-    ray($sandbox->exec(
+    $sandbox->exec(
         command: "bash -c 'git status'",
         cwd: $wdr,
-    ));
-    // ray($sandbox->readFile($wdr.'/test.txt'));
+    );
     $sandbox->gitCommit(
         repoPath: $wdr,
         message: 'Add new test file',
         authorName: 'Elliott Lawson',
         authorEmail: 'elliott@example.com',
     );
-    ray($sandbox->exec(
+    $sandbox->exec(
         command: "bash -c 'git status'",
         cwd: $wdr,
-    ));
+    );
     $sandbox->gitPush(
         repoPath: $wdr,
         username: env('GITHUB_USERNAME'),
         password: env('GITHUB_TOKEN'),
     );
-    ray($sandbox->exec(
+    $sandbox->exec(
         command: "bash -c 'git status'",
         cwd: $wdr,
-    ));
+    );
 
     $sandbox->delete();
-});
+})->skip('Manual test for Git operations');
 
 it('creates a sandbox with minimal parameters and validates response structure', function () {
     $params = new SandboxCreateParameters;
@@ -221,7 +219,7 @@ it('can retrieve sandbox details after creation', function () {
 
     $getResponse = $this->client->getSandbox($createdSandbox->getId());
 
-    expect($getResponse)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\SandboxResponse::class);
+    expect($getResponse)->toBeInstanceOf(SandboxResponse::class);
     expect($getResponse->id)->toBe($createdSandbox->getId());
     expect($getResponse->organizationId)->toBe($createdSandbox->getOrganizationId());
 
@@ -270,7 +268,7 @@ it('handles long-running commands with custom timeout', function () {
         timeout: 45000 // 45 seconds in milliseconds
     );
 
-    expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
+    expect($response)->toBeInstanceOf(CommandResponse::class);
     expect($response->isSuccessful())->toBeTrue();
     expect($response->output)->toContain('Command completed after 35 seconds');
 
@@ -290,7 +288,7 @@ it('respects command timeout and fails appropriately', function () {
     );
 
     // The command should fail due to timeout
-    expect($response)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\CommandResponse::class);
+    expect($response)->toBeInstanceOf(CommandResponse::class);
     expect($response->isSuccessful())->toBeFalse();
     expect($response->output)->not->toContain('This should not appear');
 
