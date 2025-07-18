@@ -20,7 +20,6 @@ use ElliottLawson\Daytona\DTOs\SearchMatch;
 use ElliottLawson\Daytona\Exceptions\ApiException;
 use ElliottLawson\Daytona\Exceptions\CommandExecutionException;
 use ElliottLawson\Daytona\Exceptions\ConfigurationException;
-use ElliottLawson\Daytona\Exceptions\DaytonaException;
 use ElliottLawson\Daytona\Exceptions\FileSystemException;
 use ElliottLawson\Daytona\Exceptions\GitException;
 use ElliottLawson\Daytona\Exceptions\SandboxException;
@@ -44,7 +43,7 @@ class DaytonaClient
             ->baseUrl($this->config->apiUrl)
             ->timeout($timeout)
             ->acceptJson()
-            ->throw(fn($response, $httpException) => $this->handleApiError($response, $httpException));
+            ->throw(fn ($response, $httpException) => $this->handleApiError($response, $httpException));
 
         if ($this->config->organizationId) {
             $client->withHeaders([
@@ -62,7 +61,7 @@ class DaytonaClient
     {
         $statusCode = $response->status();
         $body = $response->body();
-        
+
         // Handle timeout errors specifically
         if ($httpException && str_contains($httpException->getMessage(), 'timeout')) {
             return ApiException::timeout('API request');
@@ -70,13 +69,13 @@ class DaytonaClient
 
         // Enhanced error messages based on status code
         $message = match ($statusCode) {
-            401 => "Authentication failed. Please check your API key.",
-            403 => "Access denied. Please check your permissions.",
-            404 => "Resource not found.",
-            409 => "Conflict - resource already exists or is in use.",
-            422 => "Invalid request data. Please check your parameters.",
-            429 => "Rate limit exceeded. Please try again later.",
-            500, 502, 503, 504 => "Server error. Please try again later.",
+            401 => 'Authentication failed. Please check your API key.',
+            403 => 'Access denied. Please check your permissions.',
+            404 => 'Resource not found.',
+            409 => 'Conflict - resource already exists or is in use.',
+            422 => 'Invalid request data. Please check your parameters.',
+            429 => 'Rate limit exceeded. Please try again later.',
+            500, 502, 503, 504 => 'Server error. Please try again later.',
             default => "API request failed: {$body}"
         };
 
@@ -966,7 +965,7 @@ class DaytonaClient
     /**
      * List all sandboxes with optional filtering.
      *
-     * @param array|SandboxFilter|null $filter Filter criteria for sandboxes
+     * @param  array|SandboxFilter|null  $filter  Filter criteria for sandboxes
      * @return Sandbox[] Array of Sandbox instances
      */
     public function listSandboxes($filter = null): array
@@ -979,7 +978,7 @@ class DaytonaClient
             if ($filter !== null) {
                 if (is_array($filter)) {
                     // Handle legacy array-based labels filter
-                    if (!empty($filter)) {
+                    if (! empty($filter)) {
                         $queryParams['labels'] = json_encode($filter);
                     }
                 } elseif ($filter instanceof SandboxFilter) {
@@ -989,7 +988,7 @@ class DaytonaClient
 
             $response = $this->client()->get('sandbox', $queryParams);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'list sandboxes');
             }
 
@@ -999,6 +998,7 @@ class DaytonaClient
 
             return array_map(function (array $sandboxData) {
                 $sandboxResponse = SandboxResponse::fromArray($sandboxData);
+
                 return new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
             }, $sandboxes);
 
@@ -1014,8 +1014,9 @@ class DaytonaClient
     /**
      * Find the first sandbox matching the given labels.
      *
-     * @param array $labels Labels to match
+     * @param  array  $labels  Labels to match
      * @return Sandbox The first matching sandbox
+     *
      * @throws SandboxException When no sandbox is found
      */
     public function findSandboxByLabels(array $labels): Sandbox
@@ -1023,7 +1024,7 @@ class DaytonaClient
         $sandboxes = $this->listSandboxes($labels);
 
         if (empty($sandboxes)) {
-            throw SandboxException::notFound('with labels: ' . json_encode($labels));
+            throw SandboxException::notFound('with labels: '.json_encode($labels));
         }
 
         return $sandboxes[0];
@@ -1032,8 +1033,9 @@ class DaytonaClient
     /**
      * Find a sandbox by filter criteria.
      *
-     * @param SandboxFilter $filter Filter criteria
+     * @param  SandboxFilter  $filter  Filter criteria
      * @return Sandbox The first matching sandbox
+     *
      * @throws SandboxException When no sandbox is found
      */
     public function findSandbox(SandboxFilter $filter): Sandbox
@@ -1093,6 +1095,7 @@ class DaytonaClient
                     'state' => $sandbox->state,
                     'elapsedTime' => time() - $startTime,
                 ]);
+
                 return;
             }
 

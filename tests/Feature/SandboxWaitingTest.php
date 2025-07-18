@@ -36,7 +36,7 @@ describe('Sandbox Waiting Mechanisms', function () {
 
             // Verify status was checked
             Http::assertSent(function ($request) {
-                return str_contains($request->url(), 'sandbox/test-sandbox') && 
+                return str_contains($request->url(), 'sandbox/test-sandbox') &&
                        $request->method() === 'GET';
             });
         });
@@ -81,9 +81,9 @@ describe('Sandbox Waiting Mechanisms', function () {
             Http::fake([
                 '*/sandbox/test-sandbox/start' => Http::response(['id' => 'test-sandbox', 'state' => 'starting'], 200),
                 '*/sandbox/test-sandbox' => Http::response([
-                    'id' => 'test-sandbox', 
+                    'id' => 'test-sandbox',
                     'state' => 'error',
-                    'errorReason' => 'Failed to allocate resources'
+                    'errorReason' => 'Failed to allocate resources',
                 ], 200),
             ]);
 
@@ -293,7 +293,7 @@ describe('Sandbox Waiting Mechanisms', function () {
                 '*/sandbox/test-sandbox' => Http::response([
                     'id' => 'test-sandbox',
                     'state' => 'failed',
-                    'errorReason' => 'Insufficient resources'
+                    'errorReason' => 'Insufficient resources',
                 ], 200),
             ]);
 

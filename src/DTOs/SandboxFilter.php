@@ -20,7 +20,7 @@ class SandboxFilter
             $filter['id'] = $this->id;
         }
 
-        if ($this->labels !== null && !empty($this->labels)) {
+        if ($this->labels !== null && ! empty($this->labels)) {
             $filter['labels'] = json_encode($this->labels);
         }
 

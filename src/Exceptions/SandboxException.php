@@ -52,6 +52,7 @@ class SandboxException extends DaytonaException
     public static function stateTimeout(string $sandboxId, array $targetStates, int $timeout): self
     {
         $statesStr = implode(', ', $targetStates);
+
         return new self("Sandbox {$sandboxId} failed to reach target state(s) [{$statesStr}] within {$timeout} seconds");
     }
 
@@ -61,12 +62,14 @@ class SandboxException extends DaytonaException
         if ($reason) {
             $message .= " - {$reason}";
         }
+
         return new self($message);
     }
 
     public static function unexpectedState(string $sandboxId, string $currentState, array $expectedStates): self
     {
         $expectedStr = implode(', ', $expectedStates);
+
         return new self("Sandbox {$sandboxId} is in unexpected state '{$currentState}', expected one of: {$expectedStr}");
     }
 }

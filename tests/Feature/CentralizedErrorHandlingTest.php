@@ -182,7 +182,7 @@ describe('Centralized Error Handling', function () {
             Http::fake([
                 '*/sandbox' => function () {
                     throw new \Exception('timeout of 30000ms exceeded');
-                }
+                },
             ]);
 
             $this->client->listSandboxes();
@@ -199,10 +199,10 @@ describe('Centralized Error Handling', function () {
             ]);
 
             // Test multiple methods use centralized error handling
-            expect(fn() => $this->client->startSandbox('test'))->toThrow(ApiException::class)
-                ->and(fn() => $this->client->stopSandbox('test'))->toThrow(ApiException::class)
-                ->and(fn() => $this->client->getSandbox('test'))->toThrow(ApiException::class)
-                ->and(fn() => $this->client->executeCommand('test', 'echo hello'))->toThrow(ApiException::class);
+            expect(fn () => $this->client->startSandbox('test'))->toThrow(ApiException::class)
+                ->and(fn () => $this->client->stopSandbox('test'))->toThrow(ApiException::class)
+                ->and(fn () => $this->client->getSandbox('test'))->toThrow(ApiException::class)
+                ->and(fn () => $this->client->executeCommand('test', 'echo hello'))->toThrow(ApiException::class);
         });
 
         it('sandbox waiting methods get centralized error handling', function () {
@@ -266,7 +266,7 @@ describe('Centralized Error Handling', function () {
                 '*/sandbox/test' => Http::response([
                     'id' => 'test',
                     'state' => 'error',
-                    'errorReason' => 'Failed to start'
+                    'errorReason' => 'Failed to start',
                 ], 200),
             ]);
 

@@ -33,7 +33,7 @@ describe('Sandbox Discovery and Filtering', function () {
                 'disk' => 20,
             ],
             [
-                'id' => 'sandbox-2', 
+                'id' => 'sandbox-2',
                 'state' => 'stopped',
                 'organizationId' => 'test-org',
                 'user' => 'jane',
@@ -78,7 +78,7 @@ describe('Sandbox Discovery and Filtering', function () {
                 ->and($sandboxes[2]->getId())->toBe('sandbox-3');
 
             Http::assertSent(function ($request) {
-                return str_contains($request->url(), 'sandbox') && 
+                return str_contains($request->url(), 'sandbox') &&
                        $request->method() === 'GET' &&
                        empty($request->data());
             });
@@ -129,7 +129,7 @@ describe('Sandbox Discovery and Filtering', function () {
 
             $sandboxes = $this->client->listSandboxes([
                 'environment' => 'dev',
-                'project' => 'backend'
+                'project' => 'backend',
             ]);
 
             expect($sandboxes)->toHaveCount(1)
@@ -252,7 +252,7 @@ describe('Sandbox Discovery and Filtering', function () {
 
             $sandbox = $this->client->findSandboxByLabels([
                 'environment' => 'prod',
-                'project' => 'backend'
+                'project' => 'backend',
             ]);
 
             expect($sandbox)->toBeInstanceOf(Sandbox::class)
@@ -296,7 +296,7 @@ describe('Sandbox Discovery and Filtering', function () {
         it('returns first sandbox when multiple matches exist', function () {
             $multipleSandboxes = [
                 $this->sampleSandboxes[0],
-                $this->sampleSandboxes[2]
+                $this->sampleSandboxes[2],
             ]; // Both john's sandboxes
 
             Http::fake([
@@ -330,7 +330,7 @@ describe('Sandbox Discovery and Filtering', function () {
             // Should not include labels parameter in request
             Http::assertSent(function ($request) {
                 return str_contains($request->url(), 'sandbox') &&
-                       !isset($request->data()['labels']);
+                       ! isset($request->data()['labels']);
             });
         });
     });

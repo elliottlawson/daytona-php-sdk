@@ -118,6 +118,7 @@ class Sandbox
     {
         $this->client->startSandbox($this->id, $timeout);
         $this->refresh();
+
         return $this;
     }
 
@@ -125,6 +126,7 @@ class Sandbox
     {
         $this->client->stopSandbox($this->id, $timeout);
         $this->refresh();
+
         return $this;
     }
 
@@ -137,6 +139,7 @@ class Sandbox
             $this->client->waitUntilSandboxStarted($this->id, $timeout);
             $this->refresh();
         }
+
         return $this;
     }
 
@@ -149,6 +152,7 @@ class Sandbox
             $this->client->waitUntilSandboxStopped($this->id, $timeout);
             $this->refresh();
         }
+
         return $this;
     }
 
