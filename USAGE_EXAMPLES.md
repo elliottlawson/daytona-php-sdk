@@ -4,6 +4,28 @@
 
 The Daytona PHP SDK provides comprehensive file management capabilities for working with sandbox environments. Here are practical examples of all available file operations.
 
+## Available File Operations
+
+The SDK supports the following file operations:
+
+### Basic File Operations
+- **Read File** - Get file contents
+- **Write File** - Create or update file contents  
+- **Delete File** - Remove files
+- **List Directory** - Get directory contents
+- **File Exists** - Check if file exists
+
+### Advanced File Operations
+- **Create Directory** - Create directories with permissions
+- **Move/Rename** - Move or rename files and directories
+- **File Details** - Get comprehensive file metadata
+- **Set Permissions** - Change file permissions and ownership
+- **Search Files** - Find files by name patterns
+- **Find in Files** - Search text content within files
+- **Replace in Files** - Bulk text replacement across files
+
+All operations support method chaining for complex workflows and include comprehensive error handling.
+
 ## Basic Setup
 
 ```php
@@ -283,25 +305,3 @@ try {
     };
 }
 ```
-
-## Available File Operations
-
-The SDK supports the following file operations:
-
-### Basic File Operations
-- **Read File** - Get file contents
-- **Write File** - Create or update file contents  
-- **Delete File** - Remove files
-- **List Directory** - Get directory contents
-- **File Exists** - Check if file exists
-
-### Advanced File Operations
-- **Create Directory** - Create directories with permissions
-- **Move/Rename** - Move or rename files and directories
-- **File Details** - Get comprehensive file metadata
-- **Set Permissions** - Change file permissions and ownership
-- **Search Files** - Find files by name patterns
-- **Find in Files** - Search text content within files
-- **Replace in Files** - Bulk text replacement across files
-
-All operations support method chaining for complex workflows and include comprehensive error handling.
