@@ -66,7 +66,7 @@ describe('Sandbox Discovery and Filtering', function () {
     describe('List All Sandboxes', function () {
         it('lists all sandboxes without filters', function () {
             Http::fake([
-                '*/sandbox' => Http::response($this->sampleSandboxes, 200),
+                '*/sandbox*' => Http::response($this->sampleSandboxes, 200),
             ]);
 
             $sandboxes = $this->client->listSandboxes();
@@ -86,7 +86,7 @@ describe('Sandbox Discovery and Filtering', function () {
 
         it('returns empty array when no sandboxes exist', function () {
             Http::fake([
-                '*/sandbox' => Http::response([], 200),
+                '*/sandbox*' => Http::response([], 200),
             ]);
 
             $sandboxes = $this->client->listSandboxes();
@@ -102,7 +102,7 @@ describe('Sandbox Discovery and Filtering', function () {
             });
 
             Http::fake([
-                '*/sandbox' => Http::response(array_values($filteredSandboxes), 200),
+                '*/sandbox*' => Http::response(array_values($filteredSandboxes), 200),
             ]);
 
             $sandboxes = $this->client->listSandboxes(['environment' => 'dev']);
@@ -124,7 +124,7 @@ describe('Sandbox Discovery and Filtering', function () {
             });
 
             Http::fake([
-                '*/sandbox' => Http::response(array_values($filteredSandboxes), 200),
+                '*/sandbox*' => Http::response(array_values($filteredSandboxes), 200),
             ]);
 
             $sandboxes = $this->client->listSandboxes([
@@ -206,7 +206,7 @@ describe('Sandbox Discovery and Filtering', function () {
             });
 
             Http::fake([
-                '*/sandbox' => Http::response(array_values($filteredSandboxes), 200),
+                '*/sandbox*' => Http::response(array_values($filteredSandboxes), 200),
             ]);
 
             $filter = SandboxFilter::byState('started');
@@ -226,7 +226,7 @@ describe('Sandbox Discovery and Filtering', function () {
             });
 
             Http::fake([
-                '*/sandbox' => Http::response(array_values($filteredSandboxes), 200),
+                '*/sandbox*' => Http::response(array_values($filteredSandboxes), 200),
             ]);
 
             $filter = SandboxFilter::byUser('john')->withState('started');
@@ -247,7 +247,7 @@ describe('Sandbox Discovery and Filtering', function () {
             $targetSandbox = $this->sampleSandboxes[1]; // prod backend sandbox
 
             Http::fake([
-                '*/sandbox' => Http::response([$targetSandbox], 200),
+                '*/sandbox*' => Http::response([$targetSandbox], 200),
             ]);
 
             $sandbox = $this->client->findSandboxByLabels([
@@ -261,7 +261,7 @@ describe('Sandbox Discovery and Filtering', function () {
 
         it('throws exception when no sandbox found by labels', function () {
             Http::fake([
-                '*/sandbox' => Http::response([], 200),
+                '*/sandbox*' => Http::response([], 200),
             ]);
 
             $this->client->findSandboxByLabels(['nonexistent' => 'label']);
@@ -271,7 +271,7 @@ describe('Sandbox Discovery and Filtering', function () {
             $targetSandbox = $this->sampleSandboxes[0]; // john's frontend dev sandbox
 
             Http::fake([
-                '*/sandbox' => Http::response([$targetSandbox], 200),
+                '*/sandbox*' => Http::response([$targetSandbox], 200),
             ]);
 
             $filter = SandboxFilter::byUser('john')
@@ -285,7 +285,7 @@ describe('Sandbox Discovery and Filtering', function () {
 
         it('throws exception when no sandbox found with filter', function () {
             Http::fake([
-                '*/sandbox' => Http::response([], 200),
+                '*/sandbox*' => Http::response([], 200),
             ]);
 
             $filter = SandboxFilter::byUser('nonexistent');
@@ -300,7 +300,7 @@ describe('Sandbox Discovery and Filtering', function () {
             ]; // Both john's sandboxes
 
             Http::fake([
-                '*/sandbox' => Http::response($multipleSandboxes, 200),
+                '*/sandbox*' => Http::response($multipleSandboxes, 200),
             ]);
 
             $sandbox = $this->client->findSandboxByLabels(['environment' => 'dev']);
@@ -312,7 +312,7 @@ describe('Sandbox Discovery and Filtering', function () {
     describe('Error Handling', function () {
         it('handles API errors gracefully during listing', function () {
             Http::fake([
-                '*/sandbox' => Http::response(['error' => 'Unauthorized'], 401),
+                '*/sandbox*' => Http::response(['error' => 'Unauthorized'], 401),
             ]);
 
             $this->client->listSandboxes();
@@ -320,7 +320,7 @@ describe('Sandbox Discovery and Filtering', function () {
 
         it('handles empty labels filter correctly', function () {
             Http::fake([
-                '*/sandbox' => Http::response($this->sampleSandboxes, 200),
+                '*/sandbox*' => Http::response($this->sampleSandboxes, 200),
             ]);
 
             $sandboxes = $this->client->listSandboxes([]);
@@ -341,7 +341,8 @@ describe('Sandbox Discovery and Filtering', function () {
             $sandboxData['state'] = 'started';
 
             Http::fake([
-                '*/sandbox' => Http::response([$sandboxData], 200),
+                '*/sandbox?*' => Http::response([$sandboxData], 200), // For listSandboxes with filter
+                '*/sandbox/sandbox-1' => Http::response($sandboxData, 200), // For getSandbox calls
                 '*/sandbox/sandbox-1/start' => Http::response($sandboxData, 200),
                 '*/toolbox/sandbox-1/toolbox/process/execute' => Http::response([
                     'exitCode' => 0,

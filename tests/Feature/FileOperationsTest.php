@@ -7,7 +7,7 @@ use ElliottLawson\Daytona\DTOs\FilePermissionsParams;
 use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\DTOs\SearchMatch;
-use ElliottLawson\Daytona\Exceptions\FileSystemException;
+use ElliottLawson\Daytona\Exceptions\ApiException;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -42,7 +42,7 @@ describe('createFolder method', function () {
         ]);
 
         expect(fn () => $this->client->createFolder($this->sandboxId, '/restricted', '755'))
-            ->toThrow(FileSystemException::class);
+            ->toThrow(ApiException::class, 'Access denied. Please check your permissions.');
     });
 });
 
@@ -68,7 +68,7 @@ describe('moveFile method', function () {
         ]);
 
         expect(fn () => $this->client->moveFile($this->sandboxId, '/nonexistent.txt', '/app/file.txt'))
-            ->toThrow(FileSystemException::class);
+            ->toThrow(ApiException::class, 'Resource not found.');
     });
 });
 
@@ -112,7 +112,7 @@ describe('getFileDetails method', function () {
         ]);
 
         expect(fn () => $this->client->getFileDetails($this->sandboxId, '/nonexistent.txt'))
-            ->toThrow(FileSystemException::class);
+            ->toThrow(ApiException::class, 'Resource not found.');
     });
 });
 
@@ -166,7 +166,7 @@ describe('setFilePermissions method', function () {
         $permissions = new FilePermissionsParams(mode: '644');
 
         expect(fn () => $this->client->setFilePermissions($this->sandboxId, '/readonly.txt', $permissions))
-            ->toThrow(FileSystemException::class);
+            ->toThrow(ApiException::class, 'Access denied. Please check your permissions.');
     });
 });
 
@@ -213,7 +213,7 @@ describe('searchFiles method', function () {
         ]);
 
         expect(fn () => $this->client->searchFiles($this->sandboxId, '/app', '[invalid'))
-            ->toThrow(FileSystemException::class);
+            ->toThrow(ApiException::class);
     });
 });
 
@@ -271,7 +271,7 @@ describe('findInFiles method', function () {
         ]);
 
         expect(fn () => $this->client->findInFiles($this->sandboxId, '/app', '[invalid-regex'))
-            ->toThrow(FileSystemException::class);
+            ->toThrow(ApiException::class);
     });
 });
 
@@ -346,7 +346,7 @@ describe('replaceInFiles method', function () {
         ]);
 
         expect(fn () => $this->client->replaceInFiles($this->sandboxId, [], 'pattern', 'replacement'))
-            ->toThrow(FileSystemException::class);
+            ->toThrow(ApiException::class);
     });
 });
 

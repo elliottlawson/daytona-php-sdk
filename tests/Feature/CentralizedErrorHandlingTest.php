@@ -175,7 +175,7 @@ describe('Centralized Error Handling', function () {
             });
 
             $this->client->listSandboxes();
-        })->throws(ApiException::class, 'API request failed');
+        })->throws(ApiException::class, 'Network error during list sandboxes. Please check your connection.');
 
         it('handles request timeout in error handler', function () {
             // Mock a scenario where timeout is detected in the error handler
@@ -228,7 +228,7 @@ describe('Centralized Error Handling', function () {
         it('provides consistent error messages across different operations', function () {
             Http::fake([
                 '*/sandbox/test' => Http::response(['error' => 'Not found'], 404),
-                '*/toolbox/test/toolbox/files/download' => Http::response(['error' => 'Not found'], 404),
+                '*/toolbox/test/toolbox/files/download*' => Http::response(['error' => 'Not found'], 404),
             ]);
 
             $getSandboxException = null;

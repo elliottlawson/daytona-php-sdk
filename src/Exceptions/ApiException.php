@@ -14,13 +14,13 @@ class ApiException extends DaytonaException
         $body = $response->body();
 
         $message = match ($statusCode) {
-            401 => "Authentication failed. Please check your API key.",
-            403 => "Access denied. Please check your permissions.",
-            404 => "Resource not found.",
-            409 => "Conflict - resource already exists or is in use.",
-            422 => "Invalid request data. Please check your parameters.",
-            429 => "Rate limit exceeded. Please try again later.",
-            500, 502, 503, 504 => "Server error. Please try again later.",
+            401 => 'Authentication failed. Please check your API key.',
+            403 => 'Access denied. Please check your permissions.',
+            404 => 'Resource not found.',
+            409 => 'Conflict - resource already exists or is in use.',
+            422 => 'Invalid request data. Please check your parameters.',
+            429 => 'Rate limit exceeded. Please try again later.',
+            500, 502, 503, 504 => 'Server error. Please try again later.',
             default => "API request failed: {$body}"
         };
 

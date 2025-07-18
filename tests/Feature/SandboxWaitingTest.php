@@ -197,7 +197,8 @@ describe('Sandbox Waiting Mechanisms', function () {
             Http::fake([
                 '*/sandbox/test-sandbox' => Http::sequence()
                     ->push(['id' => 'test-sandbox', 'state' => 'starting'], 200)
-                    ->push($sandboxData, 200), // Final state
+                    ->push($sandboxData, 200) // Final state from waitUntilSandboxStarted
+                    ->push($sandboxData, 200), // For refresh() call
             ]);
 
             $sandboxResponse = SandboxResponse::fromArray($sandboxData);
@@ -227,7 +228,8 @@ describe('Sandbox Waiting Mechanisms', function () {
             Http::fake([
                 '*/sandbox/test-sandbox' => Http::sequence()
                     ->push(['id' => 'test-sandbox', 'state' => 'stopping'], 200)
-                    ->push($sandboxData, 200), // Final state
+                    ->push($sandboxData, 200) // Final state from waitUntilSandboxStopped
+                    ->push($sandboxData, 200), // For refresh() call
             ]);
 
             $sandboxResponse = SandboxResponse::fromArray($sandboxData);

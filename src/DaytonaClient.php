@@ -251,25 +251,16 @@ class DaytonaClient
 
     public function readFile(string $sandboxId, string $path): string
     {
-        try {
-            Log::debug('Reading file from Daytona sandbox', [
-                'sandboxId' => $sandboxId,
-                'path' => $path,
-            ]);
+        Log::debug('Reading file from Daytona sandbox', [
+            'sandboxId' => $sandboxId,
+            'path' => $path,
+        ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/download", [
-                'path' => $path,
-            ]);
+        $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/download", [
+            'path' => $path,
+        ]);
 
-            return $response->body();
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('Connection error during read file', [
-                'sandboxId' => $sandboxId,
-                'path' => $path,
-                'error' => $e->getMessage(),
-            ]);
-            throw ApiException::networkError('read file', $e);
-        }
+        return $response->body();
     }
 
     public function writeFile(string $sandboxId, string $path, string $content): void
@@ -950,6 +941,16 @@ class DaytonaClient
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             Log::error('Connection error during list sandboxes', ['error' => $e->getMessage()]);
             throw ApiException::networkError('list sandboxes', $e);
+        } catch (\Exception $e) {
+            // Handle timeout exceptions that occur before HTTP response
+            if (str_contains($e->getMessage(), 'timeout of') && str_contains($e->getMessage(), 'ms exceeded')) {
+                $timeout = 30; // Default timeout
+                if (preg_match('/timeout of (\d+)ms/', $e->getMessage(), $matches)) {
+                    $timeout = (int) ($matches[1] / 1000); // Convert ms to seconds
+                }
+                throw ApiException::timeout('list sandboxes', $timeout);
+            }
+            throw $e;
         }
     }
 
