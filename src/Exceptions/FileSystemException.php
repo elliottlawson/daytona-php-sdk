@@ -40,4 +40,44 @@ class FileSystemException extends Exception
     {
         return new self("Failed to check file existence for '{$path}': {$message}", 0, $previous);
     }
+
+    public static function createDirectoryFailed(string $path, string $message, ?\Throwable $previous = null): self
+    {
+        return new self("Failed to create directory '{$path}': {$message}", 0, $previous);
+    }
+
+    public static function moveFailed(string $source, string $destination, string $message, ?\Throwable $previous = null): self
+    {
+        return new self("Failed to move '{$source}' to '{$destination}': {$message}", 0, $previous);
+    }
+
+    public static function getFileDetailsFailed(string $path, string $message, ?\Throwable $previous = null): self
+    {
+        return new self("Failed to get file details for '{$path}': {$message}", 0, $previous);
+    }
+
+    public static function setPermissionsFailed(string $path, string $message, ?\Throwable $previous = null): self
+    {
+        return new self("Failed to set permissions for '{$path}': {$message}", 0, $previous);
+    }
+
+    public static function searchFilesFailed(string $path, string $pattern, string $message, ?\Throwable $previous = null): self
+    {
+        return new self("Failed to search files in '{$path}' with pattern '{$pattern}': {$message}", 0, $previous);
+    }
+
+    public static function findInFilesFailed(string $path, string $pattern, string $message, ?\Throwable $previous = null): self
+    {
+        return new self("Failed to find text in files in '{$path}' with pattern '{$pattern}': {$message}", 0, $previous);
+    }
+
+    /**
+     * @param  string[]  $files
+     */
+    public static function replaceInFilesFailed(array $files, string $pattern, string $message, ?\Throwable $previous = null): self
+    {
+        $filesList = implode(', ', array_slice($files, 0, 3)).(count($files) > 3 ? '...' : '');
+
+        return new self("Failed to replace text in files [{$filesList}] with pattern '{$pattern}': {$message}", 0, $previous);
+    }
 }
