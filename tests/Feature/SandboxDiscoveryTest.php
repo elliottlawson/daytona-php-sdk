@@ -7,17 +7,16 @@ use ElliottLawson\Daytona\Exceptions\SandboxException;
 use ElliottLawson\Daytona\Sandbox;
 use Illuminate\Support\Facades\Http;
 
-describe('Sandbox Discovery and Filtering', function () {
-    beforeEach(function () {
-        $this->config = new Config(
-            apiKey: 'test-api-key',
-            apiUrl: 'https://api.example.com',
-            organizationId: 'test-org'
-        );
-        $this->client = new DaytonaClient($this->config);
+beforeEach(function () {
+    $this->config = new Config(
+        apiKey: 'test-api-key',
+        apiUrl: 'https://api.example.com',
+        organizationId: 'test-org'
+    );
+    $this->client = new DaytonaClient($this->config);
 
-        // Sample sandbox data for testing
-        $this->sampleSandboxes = [
+    // Sample sandbox data for testing
+    $this->sampleSandboxes = [
             [
                 'id' => 'sandbox-1',
                 'state' => 'started',
@@ -61,8 +60,9 @@ describe('Sandbox Discovery and Filtering', function () {
                 'disk' => 20,
             ],
         ];
-    });
+});
 
+describe('Sandbox Discovery and Filtering', function () {
     describe('List All Sandboxes', function () {
         it('lists all sandboxes without filters', function () {
             Http::fake([

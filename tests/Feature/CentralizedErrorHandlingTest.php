@@ -7,15 +7,16 @@ use ElliottLawson\Daytona\Exceptions\DaytonaException;
 use ElliottLawson\Daytona\Exceptions\SandboxException;
 use Illuminate\Support\Facades\Http;
 
+beforeEach(function () {
+    $config = new Config(
+        apiKey: 'test-api-key',
+        apiUrl: 'https://api.example.com',
+        organizationId: 'test-org'
+    );
+    $this->client = new DaytonaClient($config);
+});
+
 describe('Centralized Error Handling', function () {
-    beforeEach(function () {
-        $this->config = new Config(
-            apiKey: 'test-api-key',
-            apiUrl: 'https://api.example.com',
-            organizationId: 'test-org'
-        );
-        $this->client = new DaytonaClient($this->config);
-    });
 
     describe('Base DaytonaException', function () {
         it('allows catching all SDK exceptions with base class', function () {

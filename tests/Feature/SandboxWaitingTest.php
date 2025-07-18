@@ -7,15 +7,16 @@ use ElliottLawson\Daytona\Exceptions\SandboxException;
 use ElliottLawson\Daytona\Sandbox;
 use Illuminate\Support\Facades\Http;
 
+beforeEach(function () {
+    $this->config = new Config(
+        apiKey: 'test-api-key',
+        apiUrl: 'https://api.example.com',
+        organizationId: 'test-org'
+    );
+    $this->client = new DaytonaClient($this->config);
+});
+
 describe('Sandbox Waiting Mechanisms', function () {
-    beforeEach(function () {
-        $this->config = new Config(
-            apiKey: 'test-api-key',
-            apiUrl: 'https://api.example.com',
-            organizationId: 'test-org'
-        );
-        $this->client = new DaytonaClient($this->config);
-    });
 
     describe('Start Sandbox with Waiting', function () {
         it('waits until sandbox is started with default timeout', function () {
