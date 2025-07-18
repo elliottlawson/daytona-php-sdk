@@ -6,34 +6,64 @@ class FileInfo
 {
     public function __construct(
         public readonly string $name,
-        public readonly string $path,
         public readonly bool $isDirectory,
-        public readonly ?int $size = null,
-        public readonly ?string $modifiedAt = null,
-        public readonly ?string $permissions = null,
+        public readonly int $size,
+        public readonly string $modifiedAt,
+        public readonly string $mode,
+        public readonly string $permissions,
+        public readonly string $owner,
+        public readonly string $group,
+        public readonly ?string $path = null, // Optional for backward compatibility
     ) {}
 
     public static function fromArray(array $data): self
     {
         return new self(
             name: $data['name'],
-            path: $data['path'],
-            isDirectory: $data['isDirectory'] ?? $data['is_directory'] ?? false,
-            size: $data['size'] ?? null,
-            modifiedAt: $data['modifiedAt'] ?? $data['modified_at'] ?? null,
-            permissions: $data['permissions'] ?? null,
+            isDirectory: $data['isDir'] ?? $data['isDirectory'] ?? $data['is_directory'] ?? false,
+            size: $data['size'] ?? 0,
+            modifiedAt: $data['modTime'] ?? $data['modifiedAt'] ?? $data['modified_at'] ?? '',
+            mode: $data['mode'] ?? '',
+            permissions: $data['permissions'] ?? '',
+            owner: $data['owner'] ?? '',
+            group: $data['group'] ?? '',
+            path: $data['path'] ?? null,
         );
     }
 
     public function toArray(): array
     {
-        return array_filter([
+        $result = [
             'name' => $this->name,
-            'path' => $this->path,
-            'isDirectory' => $this->isDirectory,
+            'isDir' => $this->isDirectory,
             'size' => $this->size,
-            'modifiedAt' => $this->modifiedAt,
+            'modTime' => $this->modifiedAt,
+            'mode' => $this->mode,
             'permissions' => $this->permissions,
-        ], fn ($value) => $value !== null);
+            'owner' => $this->owner,
+            'group' => $this->group,
+        ];
+
+        if ($this->path !== null) {
+            $result['path'] = $this->path;
+        }
+
+        return $result;
+    }
+
+    // Backward compatibility getters
+    public function getIsDirectory(): bool
+    {
+        return $this->isDirectory;
+    }
+
+    public function getModifiedAt(): string
+    {
+        return $this->modifiedAt;
+    }
+
+    public function getPath(): ?string
+    {
+        return $this->path;
     }
 }
