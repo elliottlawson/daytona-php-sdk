@@ -13,12 +13,14 @@ use ElliottLawson\Daytona\DTOs\GitStatusResponse;
 use ElliottLawson\Daytona\DTOs\ReplaceRequest;
 use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
+use ElliottLawson\Daytona\DTOs\SandboxFilter;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\DTOs\SearchMatch;
 use ElliottLawson\Daytona\Exceptions\ApiException;
 use ElliottLawson\Daytona\Exceptions\CommandExecutionException;
 use ElliottLawson\Daytona\Exceptions\ConfigurationException;
+use ElliottLawson\Daytona\Exceptions\DaytonaException;
 use ElliottLawson\Daytona\Exceptions\FileSystemException;
 use ElliottLawson\Daytona\Exceptions\GitException;
 use ElliottLawson\Daytona\Exceptions\SandboxException;
@@ -41,7 +43,8 @@ class DaytonaClient
         $client = Http::withToken($this->config->apiKey)
             ->baseUrl($this->config->apiUrl)
             ->timeout($timeout)
-            ->acceptJson();
+            ->acceptJson()
+            ->throw(fn($response, $httpException) => $this->handleApiError($response, $httpException));
 
         if ($this->config->organizationId) {
             $client->withHeaders([
@@ -50,6 +53,43 @@ class DaytonaClient
         }
 
         return $client;
+    }
+
+    /**
+     * Centralized API error handling.
+     */
+    private function handleApiError($response, $httpException): ApiException
+    {
+        $statusCode = $response->status();
+        $body = $response->body();
+        
+        // Handle timeout errors specifically
+        if ($httpException && str_contains($httpException->getMessage(), 'timeout')) {
+            return ApiException::timeout('API request');
+        }
+
+        // Enhanced error messages based on status code
+        $message = match ($statusCode) {
+            401 => "Authentication failed. Please check your API key.",
+            403 => "Access denied. Please check your permissions.",
+            404 => "Resource not found.",
+            409 => "Conflict - resource already exists or is in use.",
+            422 => "Invalid request data. Please check your parameters.",
+            429 => "Rate limit exceeded. Please try again later.",
+            500, 502, 503, 504 => "Server error. Please try again later.",
+            default => "API request failed: {$body}"
+        };
+
+        Log::error('API Error', [
+            'status' => $statusCode,
+            'body' => $body,
+            'message' => $message,
+        ]);
+
+        $exception = new ApiException($message, $statusCode, $httpException);
+        $exception->response = $response;
+
+        return $exception;
     }
 
     public function createSandbox(SandboxCreateParameters $params): Sandbox
@@ -142,15 +182,22 @@ class DaytonaClient
         }
     }
 
-    public function startSandbox(string $sandboxId): void
+    public function startSandbox(string $sandboxId, ?int $timeout = 60): void
     {
         try {
-            Log::info('Starting Daytona sandbox', ['sandboxId' => $sandboxId]);
+            Log::info('Starting Daytona sandbox', ['sandboxId' => $sandboxId, 'timeout' => $timeout]);
 
             $response = $this->client()->post("sandbox/{$sandboxId}/start");
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'start sandbox');
+            }
+
+            Log::info('Daytona sandbox start request sent', ['sandboxId' => $sandboxId]);
+
+            // Wait until actually started if timeout is specified
+            if ($timeout !== null && $timeout > 0) {
+                $this->waitUntilSandboxStarted($sandboxId, $timeout);
             }
 
             Log::info('Daytona sandbox started', ['sandboxId' => $sandboxId]);
@@ -163,15 +210,22 @@ class DaytonaClient
         }
     }
 
-    public function stopSandbox(string $sandboxId): void
+    public function stopSandbox(string $sandboxId, ?int $timeout = 60): void
     {
         try {
-            Log::info('Stopping Daytona sandbox', ['sandboxId' => $sandboxId]);
+            Log::info('Stopping Daytona sandbox', ['sandboxId' => $sandboxId, 'timeout' => $timeout]);
 
             $response = $this->client()->post("sandbox/{$sandboxId}/stop");
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'stop sandbox');
+            }
+
+            Log::info('Daytona sandbox stop request sent', ['sandboxId' => $sandboxId]);
+
+            // Wait until actually stopped if timeout is specified
+            if ($timeout !== null && $timeout > 0) {
+                $this->waitUntilSandboxStopped($sandboxId, $timeout);
             }
 
             Log::info('Daytona sandbox stopped', ['sandboxId' => $sandboxId]);
@@ -906,6 +960,165 @@ class DaytonaClient
                 'error' => $e->getMessage(),
             ]);
             throw FileSystemException::replaceInFilesFailed($files, $pattern, $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * List all sandboxes with optional filtering.
+     *
+     * @param array|SandboxFilter|null $filter Filter criteria for sandboxes
+     * @return Sandbox[] Array of Sandbox instances
+     */
+    public function listSandboxes($filter = null): array
+    {
+        try {
+            Log::debug('Listing Daytona sandboxes', ['filter' => $filter]);
+
+            $queryParams = [];
+
+            if ($filter !== null) {
+                if (is_array($filter)) {
+                    // Handle legacy array-based labels filter
+                    if (!empty($filter)) {
+                        $queryParams['labels'] = json_encode($filter);
+                    }
+                } elseif ($filter instanceof SandboxFilter) {
+                    $queryParams = $filter->toArray();
+                }
+            }
+
+            $response = $this->client()->get('sandbox', $queryParams);
+
+            if (!$response->successful()) {
+                throw ApiException::fromResponse($response, 'list sandboxes');
+            }
+
+            $sandboxes = $response->json();
+
+            Log::info('Sandboxes listed', ['count' => count($sandboxes)]);
+
+            return array_map(function (array $sandboxData) {
+                $sandboxResponse = SandboxResponse::fromArray($sandboxData);
+                return new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
+            }, $sandboxes);
+
+        } catch (RequestException $e) {
+            Log::error('Failed to list Daytona sandboxes', [
+                'filter' => $filter,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::networkError('list sandboxes', $e);
+        }
+    }
+
+    /**
+     * Find the first sandbox matching the given labels.
+     *
+     * @param array $labels Labels to match
+     * @return Sandbox The first matching sandbox
+     * @throws SandboxException When no sandbox is found
+     */
+    public function findSandboxByLabels(array $labels): Sandbox
+    {
+        $sandboxes = $this->listSandboxes($labels);
+
+        if (empty($sandboxes)) {
+            throw SandboxException::notFound('with labels: ' . json_encode($labels));
+        }
+
+        return $sandboxes[0];
+    }
+
+    /**
+     * Find a sandbox by filter criteria.
+     *
+     * @param SandboxFilter $filter Filter criteria
+     * @return Sandbox The first matching sandbox
+     * @throws SandboxException When no sandbox is found
+     */
+    public function findSandbox(SandboxFilter $filter): Sandbox
+    {
+        $sandboxes = $this->listSandboxes($filter);
+
+        if (empty($sandboxes)) {
+            throw SandboxException::notFound('matching filter criteria');
+        }
+
+        return $sandboxes[0];
+    }
+
+    /**
+     * Wait until sandbox reaches the 'started' state.
+     */
+    public function waitUntilSandboxStarted(string $sandboxId, int $timeout): void
+    {
+        $this->waitUntilSandboxState($sandboxId, ['started'], ['error', 'failed'], $timeout);
+    }
+
+    /**
+     * Wait until sandbox reaches the 'stopped' state.
+     */
+    public function waitUntilSandboxStopped(string $sandboxId, int $timeout): void
+    {
+        $this->waitUntilSandboxState($sandboxId, ['stopped'], ['error', 'failed'], $timeout);
+    }
+
+    /**
+     * Generic method to wait until sandbox reaches one of the target states.
+     */
+    public function waitUntilSandboxState(string $sandboxId, array $targetStates, array $errorStates, int $timeout): void
+    {
+        $startTime = time();
+        $checkInterval = 0.1; // 100ms
+
+        Log::debug('Waiting for sandbox state', [
+            'sandboxId' => $sandboxId,
+            'targetStates' => $targetStates,
+            'timeout' => $timeout,
+        ]);
+
+        while (true) {
+            $sandbox = $this->getSandbox($sandboxId);
+
+            Log::debug('Checking sandbox state', [
+                'sandboxId' => $sandboxId,
+                'currentState' => $sandbox->state,
+                'targetStates' => $targetStates,
+            ]);
+
+            // Check if we've reached a target state
+            if (in_array($sandbox->state, $targetStates)) {
+                Log::info('Sandbox reached target state', [
+                    'sandboxId' => $sandboxId,
+                    'state' => $sandbox->state,
+                    'elapsedTime' => time() - $startTime,
+                ]);
+                return;
+            }
+
+            // Check if we've reached an error state
+            if (in_array($sandbox->state, $errorStates)) {
+                Log::error('Sandbox entered error state', [
+                    'sandboxId' => $sandboxId,
+                    'state' => $sandbox->state,
+                    'errorReason' => $sandbox->errorReason,
+                ]);
+                throw SandboxException::stateError($sandboxId, $sandbox->state, $sandbox->errorReason);
+            }
+
+            // Check for timeout
+            if ($timeout > 0 && (time() - $startTime) > $timeout) {
+                Log::error('Sandbox state timeout', [
+                    'sandboxId' => $sandboxId,
+                    'currentState' => $sandbox->state,
+                    'targetStates' => $targetStates,
+                    'timeout' => $timeout,
+                ]);
+                throw SandboxException::stateTimeout($sandboxId, $targetStates, $timeout);
+            }
+
+            // Wait before next check
+            usleep($checkInterval * 1000000); // Convert to microseconds
         }
     }
 }

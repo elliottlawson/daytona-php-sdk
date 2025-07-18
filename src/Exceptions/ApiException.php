@@ -2,10 +2,9 @@
 
 namespace ElliottLawson\Daytona\Exceptions;
 
-use ElliottLawson\Daytona\Exception;
 use Illuminate\Http\Client\Response;
 
-class ApiException extends Exception
+class ApiException extends DaytonaException
 {
     protected ?Response $response = null;
 

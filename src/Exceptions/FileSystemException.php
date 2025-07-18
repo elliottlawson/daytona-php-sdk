@@ -2,9 +2,7 @@
 
 namespace ElliottLawson\Daytona\Exceptions;
 
-use ElliottLawson\Daytona\Exception;
-
-class FileSystemException extends Exception
+class FileSystemException extends DaytonaException
 {
     public static function readFailed(string $path, string $message, ?\Throwable $previous = null): self
     {
