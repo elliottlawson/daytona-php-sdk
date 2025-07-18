@@ -2,9 +2,7 @@
 
 namespace ElliottLawson\Daytona\Exceptions;
 
-use ElliottLawson\Daytona\Exception;
-
-class CommandExecutionException extends Exception
+class CommandExecutionException extends DaytonaException
 {
     public static function executionFailed(string $command, string $message, ?\Throwable $previous = null): self
     {

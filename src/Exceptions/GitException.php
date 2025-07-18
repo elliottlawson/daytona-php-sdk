@@ -2,9 +2,7 @@
 
 namespace ElliottLawson\Daytona\Exceptions;
 
-use ElliottLawson\Daytona\Exception;
-
-class GitException extends Exception
+class GitException extends DaytonaException
 {
     public static function cloneFailed(string $url, string $message, ?\Throwable $previous = null): self
     {

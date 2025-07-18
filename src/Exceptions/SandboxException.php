@@ -2,9 +2,7 @@
 
 namespace ElliottLawson\Daytona\Exceptions;
 
-use ElliottLawson\Daytona\Exception;
-
-class SandboxException extends Exception
+class SandboxException extends DaytonaException
 {
     public static function creationFailed(string $message, ?\Throwable $previous = null): self
     {
@@ -39,5 +37,36 @@ class SandboxException extends Exception
     public static function failedToStart(string $sandboxId, string $currentState): self
     {
         return new self("Sandbox {$sandboxId} failed to start. Current state: {$currentState}");
+    }
+
+    public static function startTimeout(string $sandboxId, int $timeout): self
+    {
+        return new self("Sandbox {$sandboxId} failed to start within {$timeout} seconds");
+    }
+
+    public static function stopTimeout(string $sandboxId, int $timeout): self
+    {
+        return new self("Sandbox {$sandboxId} failed to stop within {$timeout} seconds");
+    }
+
+    public static function stateTimeout(string $sandboxId, array $targetStates, int $timeout): self
+    {
+        $statesStr = implode(', ', $targetStates);
+        return new self("Sandbox {$sandboxId} failed to reach target state(s) [{$statesStr}] within {$timeout} seconds");
+    }
+
+    public static function stateError(string $sandboxId, string $state, ?string $reason = null): self
+    {
+        $message = "Sandbox {$sandboxId} entered error state: {$state}";
+        if ($reason) {
+            $message .= " - {$reason}";
+        }
+        return new self($message);
+    }
+
+    public static function unexpectedState(string $sandboxId, string $currentState, array $expectedStates): self
+    {
+        $expectedStr = implode(', ', $expectedStates);
+        return new self("Sandbox {$sandboxId} is in unexpected state '{$currentState}', expected one of: {$expectedStr}");
     }
 }
