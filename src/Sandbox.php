@@ -4,7 +4,12 @@ namespace ElliottLawson\Daytona;
 
 use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\DirectoryListingResponse;
+use ElliottLawson\Daytona\DTOs\FileInfo;
+use ElliottLawson\Daytona\DTOs\FilePermissionsParams;
+use ElliottLawson\Daytona\DTOs\Match;
+use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
+use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 
 class Sandbox
 {
@@ -191,5 +196,94 @@ class Sandbox
         $this->client->gitPush($this->id, $repoPath, $username, $password);
 
         return $this;
+    }
+
+    // New file operations
+
+    /**
+     * Create a directory with specified permissions.
+     */
+    public function createFolder(string $path, string $mode = '755'): self
+    {
+        $this->client->createFolder($this->id, $path, $mode);
+
+        return $this;
+    }
+
+    /**
+     * Move or rename a file or directory.
+     */
+    public function moveFile(string $source, string $destination): self
+    {
+        $this->client->moveFile($this->id, $source, $destination);
+
+        return $this;
+    }
+
+    /**
+     * Get detailed file information including permissions, ownership, and metadata.
+     */
+    public function getFileDetails(string $path): FileInfo
+    {
+        return $this->client->getFileDetails($this->id, $path);
+    }
+
+    /**
+     * Set file or directory permissions and ownership.
+     */
+    public function setFilePermissions(string $path, FilePermissionsParams $permissions): self
+    {
+        $this->client->setFilePermissions($this->id, $path, $permissions);
+
+        return $this;
+    }
+
+    /**
+     * Convenience method to set file permissions using individual parameters.
+     */
+    public function setPermissions(string $path, ?string $mode = null, ?string $owner = null, ?string $group = null): self
+    {
+        $permissions = new FilePermissionsParams($mode, $owner, $group);
+        
+        return $this->setFilePermissions($path, $permissions);
+    }
+
+    /**
+     * Search for files by name pattern (supports glob patterns).
+     */
+    public function searchFiles(string $path, string $pattern): SearchFilesResponse
+    {
+        return $this->client->searchFiles($this->id, $path, $pattern);
+    }
+
+    /**
+     * Search for text patterns within files (grep-like functionality).
+     *
+     * @return Match[]
+     */
+    public function findInFiles(string $path, string $pattern): array
+    {
+        return $this->client->findInFiles($this->id, $path, $pattern);
+    }
+
+    /**
+     * Replace text across multiple files.
+     *
+     * @param  string[]  $files
+     * @return ReplaceResult[]
+     */
+    public function replaceInFiles(array $files, string $pattern, string $newValue): array
+    {
+        return $this->client->replaceInFiles($this->id, $files, $pattern, $newValue);
+    }
+
+    /**
+     * Convenience method to replace text in a single file.
+     */
+    public function replaceInFile(string $file, string $pattern, string $newValue): ReplaceResult
+    {
+        $results = $this->replaceInFiles([$file], $pattern, $newValue);
+        
+        return $results[0] ?? new ReplaceResult($file, false, 'No result returned');
     }
 }

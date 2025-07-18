@@ -5,11 +5,17 @@ namespace ElliottLawson\Daytona;
 use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\DTOs\DirectoryListingResponse;
+use ElliottLawson\Daytona\DTOs\FileInfo;
+use ElliottLawson\Daytona\DTOs\FilePermissionsParams;
 use ElliottLawson\Daytona\DTOs\GitBranchesResponse;
 use ElliottLawson\Daytona\DTOs\GitHistoryResponse;
 use ElliottLawson\Daytona\DTOs\GitStatusResponse;
+use ElliottLawson\Daytona\DTOs\Match;
+use ElliottLawson\Daytona\DTOs\ReplaceRequest;
+use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
+use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\Exceptions\ApiException;
 use ElliottLawson\Daytona\Exceptions\CommandExecutionException;
 use ElliottLawson\Daytona\Exceptions\ConfigurationException;
@@ -639,5 +645,260 @@ class DaytonaClient
     public function sandboxFromResponse(SandboxResponse $response): Sandbox
     {
         return new Sandbox($response->id, $this, $response);
+    }
+
+    /**
+     * Create a directory in the sandbox with specified permissions.
+     */
+    public function createFolder(string $sandboxId, string $path, string $mode): void
+    {
+        try {
+            Log::debug('Creating directory in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'mode' => $mode,
+            ]);
+
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/folder", [
+                'path' => $path,
+                'mode' => $mode,
+            ]);
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'create directory');
+            }
+
+            Log::debug('Directory created successfully', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'mode' => $mode,
+            ]);
+        } catch (RequestException $e) {
+            Log::error('Failed to create directory in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'mode' => $mode,
+                'error' => $e->getMessage(),
+            ]);
+            throw FileSystemException::createDirectoryFailed($path, $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Move or rename a file or directory.
+     */
+    public function moveFile(string $sandboxId, string $source, string $destination): void
+    {
+        try {
+            Log::debug('Moving file in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'source' => $source,
+                'destination' => $destination,
+            ]);
+
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/move", [
+                'source' => $source,
+                'destination' => $destination,
+            ]);
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'move file');
+            }
+
+            Log::debug('File moved successfully', [
+                'sandboxId' => $sandboxId,
+                'source' => $source,
+                'destination' => $destination,
+            ]);
+        } catch (RequestException $e) {
+            Log::error('Failed to move file in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'source' => $source,
+                'destination' => $destination,
+                'error' => $e->getMessage(),
+            ]);
+            throw FileSystemException::moveFailed($source, $destination, $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Get detailed file information including permissions, ownership, and metadata.
+     */
+    public function getFileDetails(string $sandboxId, string $path): FileInfo
+    {
+        try {
+            Log::debug('Getting file details from Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+            ]);
+
+            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/info", [
+                'path' => $path,
+            ]);
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'get file details');
+            }
+
+            return FileInfo::fromArray($response->json());
+        } catch (RequestException $e) {
+            Log::error('Failed to get file details from Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'error' => $e->getMessage(),
+            ]);
+            throw FileSystemException::getFileDetailsFailed($path, $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Set file or directory permissions and ownership.
+     */
+    public function setFilePermissions(string $sandboxId, string $path, FilePermissionsParams $permissions): void
+    {
+        try {
+            Log::debug('Setting file permissions in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'permissions' => $permissions->toArray(),
+            ]);
+
+            $queryParams = ['path' => $path] + $permissions->toArray();
+
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/permissions", $queryParams);
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'set file permissions');
+            }
+
+            Log::debug('File permissions set successfully', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'permissions' => $permissions->toArray(),
+            ]);
+        } catch (RequestException $e) {
+            Log::error('Failed to set file permissions in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'permissions' => $permissions->toArray(),
+                'error' => $e->getMessage(),
+            ]);
+            throw FileSystemException::setPermissionsFailed($path, $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Search for files by name pattern (supports glob patterns).
+     */
+    public function searchFiles(string $sandboxId, string $path, string $pattern): SearchFilesResponse
+    {
+        try {
+            Log::debug('Searching files in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'pattern' => $pattern,
+            ]);
+
+            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/search", [
+                'path' => $path,
+                'pattern' => $pattern,
+            ]);
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'search files');
+            }
+
+            return SearchFilesResponse::fromArray($response->json());
+        } catch (RequestException $e) {
+            Log::error('Failed to search files in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'pattern' => $pattern,
+                'error' => $e->getMessage(),
+            ]);
+            throw FileSystemException::searchFilesFailed($path, $pattern, $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Search for text patterns within files (grep-like functionality).
+     *
+     * @return Match[]
+     */
+    public function findInFiles(string $sandboxId, string $path, string $pattern): array
+    {
+        try {
+            Log::debug('Finding text in files in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'pattern' => $pattern,
+            ]);
+
+            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/find", [
+                'path' => $path,
+                'pattern' => $pattern,
+            ]);
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'find in files');
+            }
+
+            $data = $response->json();
+            
+            return array_map(
+                fn (array $match) => Match::fromArray($match),
+                $data
+            );
+        } catch (RequestException $e) {
+            Log::error('Failed to find text in files in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'path' => $path,
+                'pattern' => $pattern,
+                'error' => $e->getMessage(),
+            ]);
+            throw FileSystemException::findInFilesFailed($path, $pattern, $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Replace text across multiple files.
+     *
+     * @param  string[]  $files
+     * @return ReplaceResult[]
+     */
+    public function replaceInFiles(string $sandboxId, array $files, string $pattern, string $newValue): array
+    {
+        try {
+            Log::debug('Replacing text in files in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'files' => $files,
+                'pattern' => $pattern,
+                'newValue' => $newValue,
+            ]);
+
+            $replaceRequest = new ReplaceRequest($files, $pattern, $newValue);
+
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/replace", $replaceRequest->toArray());
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'replace in files');
+            }
+
+            $data = $response->json();
+
+            return array_map(
+                fn (array $result) => ReplaceResult::fromArray($result),
+                $data
+            );
+        } catch (RequestException $e) {
+            Log::error('Failed to replace text in files in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'files' => $files,
+                'pattern' => $pattern,
+                'newValue' => $newValue,
+                'error' => $e->getMessage(),
+            ]);
+            throw FileSystemException::replaceInFilesFailed($files, $pattern, $e->getMessage(), $e);
+        }
     }
 }
