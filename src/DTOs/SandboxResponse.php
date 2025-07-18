@@ -28,6 +28,7 @@ class SandboxResponse
         public readonly ?string $createdAt = null,
         public readonly ?string $updatedAt = null,
         public readonly ?string $runnerDomain = null,
+        public readonly ?string $errorReason = null,
     ) {}
 
     public static function fromArray(array $data): self
@@ -56,6 +57,7 @@ class SandboxResponse
             createdAt: $data['createdAt'] ?? null,
             updatedAt: $data['updatedAt'] ?? null,
             runnerDomain: $data['runnerDomain'] ?? null,
+            errorReason: $data['errorReason'] ?? null,
         );
     }
 

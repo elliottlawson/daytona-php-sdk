@@ -2,10 +2,9 @@
 
 namespace ElliottLawson\Daytona\Exceptions;
 
-use ElliottLawson\Daytona\Exception;
 use Illuminate\Http\Client\Response;
 
-class ApiException extends Exception
+class ApiException extends DaytonaException
 {
     protected ?Response $response = null;
 
@@ -18,6 +17,8 @@ class ApiException extends Exception
             401 => "Authentication failed for {$operation}. Please check your API key.",
             403 => "Access denied for {$operation}. Please check your permissions.",
             404 => "Resource not found for {$operation}.",
+            409 => "Conflict for {$operation} - resource already exists or is in use.",
+            422 => "Invalid request data for {$operation}. Please check your parameters.",
             429 => "Rate limit exceeded for {$operation}. Please try again later.",
             500, 502, 503, 504 => "Server error during {$operation}. Please try again later.",
             default => "API request failed for {$operation}: {$body}"
@@ -34,14 +35,19 @@ class ApiException extends Exception
         return new self("Network error during {$operation}. Please check your connection.", 0, $previous);
     }
 
-    public static function timeout(string $operation): self
+    public static function timeout(string $operation, int $timeout = 30): self
     {
-        return new self("Request timed out during {$operation}");
+        return new self("Request timed out during {$operation} after {$timeout} seconds");
     }
 
     public function getResponse(): ?Response
     {
         return $this->response;
+    }
+
+    public function setResponse(Response $response): void
+    {
+        $this->response = $response;
     }
 
     public function getResponseBody(): ?string

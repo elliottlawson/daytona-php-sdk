@@ -2,9 +2,7 @@
 
 namespace ElliottLawson\Daytona\Exceptions;
 
-use ElliottLawson\Daytona\Exception;
-
-class ConfigurationException extends Exception
+class ConfigurationException extends DaytonaException
 {
     public static function missingApiKey(): self
     {

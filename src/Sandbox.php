@@ -114,14 +114,46 @@ class Sandbox
         $this->client->deleteSandbox($this->id);
     }
 
-    public function start(): void
+    public function start(?int $timeout = 60): self
     {
-        $this->client->startSandbox($this->id);
+        $this->client->startSandbox($this->id, $timeout);
+        $this->refresh();
+
+        return $this;
     }
 
-    public function stop(): void
+    public function stop(?int $timeout = 60): self
     {
-        $this->client->stopSandbox($this->id);
+        $this->client->stopSandbox($this->id, $timeout);
+        $this->refresh();
+
+        return $this;
+    }
+
+    /**
+     * Wait until sandbox reaches the 'started' state.
+     */
+    public function waitUntilStarted(?int $timeout = 60): self
+    {
+        if ($timeout !== null) {
+            $this->client->waitUntilSandboxStarted($this->id, $timeout);
+            $this->refresh();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Wait until sandbox reaches the 'stopped' state.
+     */
+    public function waitUntilStopped(?int $timeout = 60): self
+    {
+        if ($timeout !== null) {
+            $this->client->waitUntilSandboxStopped($this->id, $timeout);
+            $this->refresh();
+        }
+
+        return $this;
     }
 
     /**
