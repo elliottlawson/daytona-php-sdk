@@ -238,18 +238,155 @@ interface FilePermissionsParams {
    - Add timeout parameters
    - Add streaming support for large files
 
+## Complete API Specification
+
+### 1. **createFolder**
+- **Endpoint**: `POST /toolbox/{sandboxId}/toolbox/files/folder`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, required) - Directory path to create
+  - `mode` (string, required) - Octal permissions (e.g., "755")
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `void` (success/error only)
+
+### 2. **deleteFile**
+- **Endpoint**: `DELETE /toolbox/{sandboxId}/toolbox/files`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, required) - File/directory path to delete
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `void` (success/error only)
+
+### 3. **downloadFile**
+- **Endpoint**: `GET /toolbox/{sandboxId}/toolbox/files/download`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, required) - File path to download
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `File` (binary file content)
+
+### 4. **findInFiles**
+- **Endpoint**: `GET /toolbox/{sandboxId}/toolbox/files/find`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, required) - Directory to search in
+  - `pattern` (string, required) - Text pattern to search for
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `Array<Match>` where `Match` contains:
+  ```typescript
+  {
+    file: string,    // File path where match found
+    line: number,    // Line number
+    content: string  // Content of the matching line
+  }
+  ```
+
+### 5. **getFileInfo**
+- **Endpoint**: `GET /toolbox/{sandboxId}/toolbox/files/info`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, required) - File path to get info for
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `FileInfo` object:
+  ```typescript
+  {
+    name: string,         // File name
+    isDir: boolean,       // Is directory
+    size: number,         // File size in bytes
+    modTime: string,      // ISO date string
+    mode: string,         // Octal permissions
+    permissions: string,  // Human-readable permissions
+    owner: string,        // File owner
+    group: string         // File group
+  }
+  ```
+
+### 6. **listFiles**
+- **Endpoint**: `GET /toolbox/{sandboxId}/toolbox/files`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, optional) - Directory path to list
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `Array<FileInfo>` (array of FileInfo objects)
+
+### 7. **moveFile**
+- **Endpoint**: `POST /toolbox/{sandboxId}/toolbox/files/move`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `source` (string, required) - Source path
+  - `destination` (string, required) - Destination path
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `void` (success/error only)
+
+### 8. **replaceInFiles**
+- **Endpoint**: `POST /toolbox/{sandboxId}/toolbox/files/replace`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `replaceRequest` (object, required) - Replace request body:
+    ```typescript
+    {
+      files: Array<string>,  // File paths to process
+      pattern: string,       // Search pattern
+      newValue: string       // Replacement text
+    }
+    ```
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `Array<ReplaceResult>` where `ReplaceResult` contains:
+  ```typescript
+  {
+    file?: string,     // File that was processed
+    success?: boolean, // Whether replacement succeeded
+    error?: string     // Error message if failed
+  }
+  ```
+
+### 9. **searchFiles**
+- **Endpoint**: `GET /toolbox/{sandboxId}/toolbox/files/search`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, required) - Directory to search in
+  - `pattern` (string, required) - File name pattern (supports globs)
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `SearchFilesResponse`:
+  ```typescript
+  {
+    files: Array<string>  // Array of matching file paths
+  }
+  ```
+
+### 10. **setFilePermissions**
+- **Endpoint**: `POST /toolbox/{sandboxId}/toolbox/files/permissions`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, required) - File path to set permissions for
+  - `owner` (string, optional) - User owner
+  - `group` (string, optional) - Group owner
+  - `mode` (string, optional) - Octal permissions (e.g., "644")
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `void` (success/error only)
+
+### 11. **uploadFile**
+- **Endpoint**: `POST /toolbox/{sandboxId}/toolbox/files/upload`
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `path` (string, required) - Destination path in sandbox
+  - `file` (File, optional) - File to upload (multipart form data)
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+- **Returns**: `void` (success/error only)
+- **Note**: This method is marked as `@deprecated` in the API
+
+### 12. **uploadFiles**
+- **Endpoint**: `POST /toolbox/{sandboxId}/toolbox/files/upload` (batch)
+- **Parameters**:
+  - `sandboxId` (string, required) - Sandbox ID
+  - `X-Daytona-Organization-ID` (header, optional) - Organization ID
+  - Form data with multiple files
+- **Returns**: `void` (success/error only)
+
 ## Implementation Notes
 
-### API Endpoints to Implement
-All missing operations use the `/toolbox/{sandboxId}/toolbox/files/*` endpoint pattern:
-
-- `POST /toolbox/{sandboxId}/toolbox/files/folder` - Create directory
-- `PUT /toolbox/{sandboxId}/toolbox/files/move` - Move/rename files
-- `PUT /toolbox/{sandboxId}/toolbox/files/permissions` - Set permissions
-- `GET /toolbox/{sandboxId}/toolbox/files/search` - Search files by name
-- `GET /toolbox/{sandboxId}/toolbox/files/search/content` - Search within files
-- `POST /toolbox/{sandboxId}/toolbox/files/replace` - Replace text in files
-- `GET /toolbox/{sandboxId}/toolbox/files/info` - Get detailed file info
+### Authentication
+All endpoints require Bearer token authentication and optionally support organization-specific requests via the `X-Daytona-Organization-ID` header.
 
 ### Error Handling
 The TypeScript SDK uses structured error responses. Your PHP SDK should implement similar error handling for the new operations.
