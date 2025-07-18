@@ -1,8 +1,8 @@
-# Daytona PHP SDK - Enhanced File Operations Usage Examples
+# Daytona PHP SDK - File Operations Usage Examples
 
 ## Overview
 
-The enhanced PHP SDK now provides **100% API parity** with the official TypeScript SDK for file operations. Here are comprehensive examples of all the new capabilities.
+The Daytona PHP SDK provides comprehensive file management capabilities for working with sandbox environments. Here are practical examples of all available file operations.
 
 ## Basic Setup
 
@@ -55,18 +55,6 @@ echo "Mode: {$fileInfo->mode}\n";
 echo "Permissions: {$fileInfo->permissions}\n";
 echo "Modified: {$fileInfo->modifiedAt}\n";
 echo "Is Directory: " . ($fileInfo->isDirectory ? 'Yes' : 'No') . "\n";
-```
-
-### Compare with Original FileInfo
-
-```php
-// The enhanced FileInfo now includes:
-// - mode (octal permissions)
-// - owner (file owner)
-// - group (file group)  
-// - modifiedAt (required, not optional)
-// - size (required, not optional)
-// + backward compatibility for existing code
 ```
 
 ## File Operations
@@ -296,47 +284,24 @@ try {
 }
 ```
 
-## Benefits of Enhanced SDK
+## Available File Operations
 
-### Before (Limited Functionality)
-```php
-// Old SDK - only basic operations
-$files = $sandbox->listDirectory('/app');
-$content = $sandbox->readFile('/app/file.txt');
-$sandbox->writeFile('/app/file.txt', $content);
-$sandbox->deleteFile('/app/file.txt');
-```
+The SDK supports the following file operations:
 
-### After (Full API Parity) 
-```php
-// Enhanced SDK - complete file management
-$sandbox
-    ->createFolder('/app/new-feature', '755')
-    ->setPermissions('/app/script.sh', '755')
-    ->replaceInFiles(['/app/config.php'], 'old_value', 'new_value')
-    ->moveFile('/tmp/upload.txt', '/app/data/upload.txt');
+### Basic File Operations
+- **Read File** - Get file contents
+- **Write File** - Create or update file contents  
+- **Delete File** - Remove files
+- **List Directory** - Get directory contents
+- **File Exists** - Check if file exists
 
-// Advanced search and discovery
-$todoItems = $sandbox->findInFiles('/app', 'TODO|FIXME');
-$configFiles = $sandbox->searchFiles('/app', 'config.*');
-$fileDetails = $sandbox->getFileDetails('/app/important.txt');
-```
+### Advanced File Operations
+- **Create Directory** - Create directories with permissions
+- **Move/Rename** - Move or rename files and directories
+- **File Details** - Get comprehensive file metadata
+- **Set Permissions** - Change file permissions and ownership
+- **Search Files** - Find files by name patterns
+- **Find in Files** - Search text content within files
+- **Replace in Files** - Bulk text replacement across files
 
-## API Coverage Comparison
-
-| Operation | Original SDK | Enhanced SDK | Status |
-|-----------|-------------|-------------|---------|
-| Read File | ✅ | ✅ | Same |
-| Write File | ✅ | ✅ | Same |
-| Delete File | ✅ | ✅ | Same |
-| List Directory | ✅ | ✅ | Same |
-| File Exists | ✅ | ✅ | Same |
-| **Create Directory** | ❌ | ✅ | **NEW** |
-| **Move/Rename** | ❌ | ✅ | **NEW** |
-| **File Details** | ❌ | ✅ | **NEW** |
-| **Set Permissions** | ❌ | ✅ | **NEW** |
-| **Search Files** | ❌ | ✅ | **NEW** |
-| **Find in Files** | ❌ | ✅ | **NEW** |
-| **Replace in Files** | ❌ | ✅ | **NEW** |
-
-**Result: 100% API parity with TypeScript SDK achieved! 🎉**
+All operations support method chaining for complex workflows and include comprehensive error handling.
