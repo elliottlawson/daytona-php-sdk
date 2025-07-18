@@ -256,7 +256,7 @@ describe('Centralized Error Handling', function () {
             ]);
 
             $this->client->listSandboxes();
-        })->throws(ApiException::class, $customError);
+        })->throws(ApiException::class, 'Custom API error with specific details');
     });
 
     describe('Backward Compatibility', function () {

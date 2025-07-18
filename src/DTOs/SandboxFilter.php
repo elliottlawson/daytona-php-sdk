@@ -80,4 +80,15 @@ class SandboxFilter
             public: $this->public,
         );
     }
+
+    public function withUser(string $user): self
+    {
+        return new self(
+            id: $this->id,
+            labels: $this->labels,
+            state: $this->state,
+            user: $user,
+            public: $this->public,
+        );
+    }
 }

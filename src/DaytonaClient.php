@@ -57,14 +57,19 @@ class DaytonaClient
     /**
      * Centralized API error handling.
      */
-    private function handleApiError($response, $httpException): ApiException
+    private function handleApiError($response, $httpException): void
     {
         $statusCode = $response->status();
         $body = $response->body();
 
-        // Handle timeout errors specifically
-        if ($httpException && str_contains($httpException->getMessage(), 'timeout')) {
-            return ApiException::timeout('API request');
+        // Handle connection timeout errors specifically (not HTTP 504 gateway timeouts)
+        if ($httpException && preg_match('/timeout of \d+ms exceeded|cURL error 28/', $httpException->getMessage())) {
+            // Extract timeout value from error message if possible
+            $timeout = 30; // Default timeout
+            if (preg_match('/timeout of (\d+)/', $httpException->getMessage(), $matches)) {
+                $timeout = (int) ($matches[1] / 1000); // Convert ms to seconds
+            }
+            throw ApiException::timeout('API request', $timeout);
         }
 
         // Enhanced error messages based on status code
@@ -86,45 +91,33 @@ class DaytonaClient
         ]);
 
         $exception = new ApiException($message, $statusCode, $httpException);
-        $exception->response = $response;
+        $exception->setResponse($response);
 
-        return $exception;
+        throw $exception;
     }
 
     public function createSandbox(SandboxCreateParameters $params): Sandbox
     {
-        try {
-            Log::info('Creating Daytona sandbox', ['params' => $params->toArray()]);
+        Log::info('Creating Daytona sandbox', ['params' => $params->toArray()]);
 
-            $response = $this->client()->post('sandbox', $params->toArray());
+        $response = $this->client()->post('sandbox', $params->toArray());
 
-            if (! $response->successful()) {
-                throw ApiException::fromResponse($response, 'create sandbox');
-            }
+        $data = $response->json();
 
-            $data = $response->json();
-
-            if (! isset($data['id'])) {
-                throw SandboxException::invalidResponse('missing sandbox ID');
-            }
-
-            Log::info('Daytona sandbox created', [
-                'sandboxId' => $data['id'],
-                'state' => $data['state'] ?? 'unknown',
-                'response' => $data,
-            ]);
-
-            $sandboxResponse = SandboxResponse::fromArray($data);
-            $sandbox = new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
-
-            return $sandbox;
-        } catch (RequestException $e) {
-            Log::error('Failed to create Daytona sandbox', [
-                'error' => $e->getMessage(),
-                'params' => $params->toArray(),
-            ]);
-            throw SandboxException::creationFailed($e->getMessage(), $e);
+        if (! isset($data['id'])) {
+            throw SandboxException::invalidResponse('missing sandbox ID');
         }
+
+        Log::info('Daytona sandbox created', [
+            'sandboxId' => $data['id'],
+            'state' => $data['state'] ?? 'unknown',
+            'response' => $data,
+        ]);
+
+        $sandboxResponse = SandboxResponse::fromArray($data);
+        $sandbox = new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
+
+        return $sandbox;
     }
 
     public function deleteSandbox(string $sandboxId): void
@@ -150,91 +143,52 @@ class DaytonaClient
 
     public function getSandbox(string $sandboxId): SandboxResponse
     {
-        try {
-            Log::debug('Getting Daytona sandbox details', ['sandboxId' => $sandboxId]);
+        Log::debug('Getting Daytona sandbox details', ['sandboxId' => $sandboxId]);
 
-            $response = $this->client()->get("sandbox/{$sandboxId}");
+        $response = $this->client()->get("sandbox/{$sandboxId}");
 
-            if (! $response->successful()) {
-                throw ApiException::fromResponse($response, 'get sandbox details');
-            }
+        $sandbox = $response->json();
 
-            $sandbox = $response->json();
+        Log::debug('Sandbox details retrieved', [
+            'sandboxId' => $sandboxId,
+            'status' => $sandbox['status'] ?? 'unknown',
+            'state' => $sandbox['state'] ?? 'unknown',
+            'sandbox' => $sandbox,
+        ]);
 
-            Log::debug('Sandbox details retrieved', [
-                'sandboxId' => $sandboxId,
-                'status' => $sandbox['status'] ?? 'unknown',
-                'state' => $sandbox['state'] ?? 'unknown',
-                'sandbox' => $sandbox,
-            ]);
-
-            return SandboxResponse::fromArray($sandbox);
-        } catch (RequestException $e) {
-            Log::error('Failed to get Daytona sandbox details', [
-                'sandboxId' => $sandboxId,
-                'error' => $e->getMessage(),
-            ]);
-            if ($e->response) {
-                throw ApiException::fromResponse($e->response, 'get sandbox details');
-            }
-            throw ApiException::networkError('get sandbox details', $e);
-        }
+        return SandboxResponse::fromArray($sandbox);
     }
 
     public function startSandbox(string $sandboxId, ?int $timeout = 60): void
     {
-        try {
-            Log::info('Starting Daytona sandbox', ['sandboxId' => $sandboxId, 'timeout' => $timeout]);
+        Log::info('Starting Daytona sandbox', ['sandboxId' => $sandboxId, 'timeout' => $timeout]);
 
-            $response = $this->client()->post("sandbox/{$sandboxId}/start");
+        $response = $this->client()->post("sandbox/{$sandboxId}/start");
 
-            if (! $response->successful()) {
-                throw ApiException::fromResponse($response, 'start sandbox');
-            }
+        Log::info('Daytona sandbox start request sent', ['sandboxId' => $sandboxId]);
 
-            Log::info('Daytona sandbox start request sent', ['sandboxId' => $sandboxId]);
-
-            // Wait until actually started if timeout is specified
-            if ($timeout !== null && $timeout > 0) {
-                $this->waitUntilSandboxStarted($sandboxId, $timeout);
-            }
-
-            Log::info('Daytona sandbox started', ['sandboxId' => $sandboxId]);
-        } catch (RequestException $e) {
-            Log::error('Failed to start Daytona sandbox', [
-                'sandboxId' => $sandboxId,
-                'error' => $e->getMessage(),
-            ]);
-            throw SandboxException::startFailed($sandboxId, $e->getMessage(), $e);
+        // Wait until actually started if timeout is specified
+        if ($timeout !== null && $timeout > 0) {
+            $this->waitUntilSandboxStarted($sandboxId, $timeout);
         }
+
+        Log::info('Daytona sandbox started', ['sandboxId' => $sandboxId]);
     }
 
     public function stopSandbox(string $sandboxId, ?int $timeout = 60): void
     {
-        try {
-            Log::info('Stopping Daytona sandbox', ['sandboxId' => $sandboxId, 'timeout' => $timeout]);
+        Log::info('Stopping Daytona sandbox', ['sandboxId' => $sandboxId, 'timeout' => $timeout]);
 
-            $response = $this->client()->post("sandbox/{$sandboxId}/stop");
+        $response = $this->client()->post("sandbox/{$sandboxId}/stop");
 
-            if (! $response->successful()) {
-                throw ApiException::fromResponse($response, 'stop sandbox');
-            }
+        Log::info('Daytona sandbox stop request sent', ['sandboxId' => $sandboxId]);
 
-            Log::info('Daytona sandbox stop request sent', ['sandboxId' => $sandboxId]);
-
-            // Wait until actually stopped if timeout is specified
-            if ($timeout !== null && $timeout > 0) {
-                $this->waitUntilSandboxStopped($sandboxId, $timeout);
-            }
-
-            Log::info('Daytona sandbox stopped', ['sandboxId' => $sandboxId]);
-        } catch (RequestException $e) {
-            Log::error('Failed to stop Daytona sandbox', [
-                'sandboxId' => $sandboxId,
-                'error' => $e->getMessage(),
-            ]);
-            throw SandboxException::stopFailed($sandboxId, $e->getMessage(), $e);
+        // Wait until actually stopped if timeout is specified
+        if ($timeout !== null && $timeout > 0) {
+            $this->waitUntilSandboxStopped($sandboxId, $timeout);
         }
+
+        Log::info('Daytona sandbox stopped', ['sandboxId' => $sandboxId]);
     }
 
     public function executeCommand(string $sandboxId, string $command, ?string $cwd = null, ?array $env = null, ?int $timeout = null): CommandResponse
@@ -307,18 +261,14 @@ class DaytonaClient
                 'path' => $path,
             ]);
 
-            if (! $response->successful()) {
-                throw ApiException::fromResponse($response, 'read file');
-            }
-
             return $response->body();
-        } catch (RequestException $e) {
-            Log::error('Failed to read file from Daytona sandbox', [
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Connection error during read file', [
                 'sandboxId' => $sandboxId,
                 'path' => $path,
                 'error' => $e->getMessage(),
             ]);
-            throw FileSystemException::readFailed($path, $e->getMessage(), $e);
+            throw ApiException::networkError('read file', $e);
         }
     }
 
@@ -988,10 +938,6 @@ class DaytonaClient
 
             $response = $this->client()->get('sandbox', $queryParams);
 
-            if (! $response->successful()) {
-                throw ApiException::fromResponse($response, 'list sandboxes');
-            }
-
             $sandboxes = $response->json();
 
             Log::info('Sandboxes listed', ['count' => count($sandboxes)]);
@@ -1001,12 +947,8 @@ class DaytonaClient
 
                 return new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
             }, $sandboxes);
-
-        } catch (RequestException $e) {
-            Log::error('Failed to list Daytona sandboxes', [
-                'filter' => $filter,
-                'error' => $e->getMessage(),
-            ]);
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Connection error during list sandboxes', ['error' => $e->getMessage()]);
             throw ApiException::networkError('list sandboxes', $e);
         }
     }
