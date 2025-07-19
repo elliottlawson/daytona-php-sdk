@@ -21,7 +21,7 @@ it('can execute basic commands in a sandbox', function () {
 
     // Test basic command execution
     $response = $sandbox->exec('echo "Hello, World!"');
-    
+
     expect($response)->toBeInstanceOf(CommandResponse::class);
     expect($response->isSuccessful())->toBeTrue();
     expect($response->output)->toContain('Hello, World!');
@@ -44,7 +44,7 @@ it('can execute commands with custom working directory', function () {
         cwd: '/home/daytona/test-dir'
     );
     ray($response)->orange();
-    
+
     expect($response->isSuccessful())->toBeTrue();
     expect(trim($response->output))->toBe('/home/daytona/test-dir');
 
@@ -53,7 +53,7 @@ it('can execute commands with custom working directory', function () {
         command: 'ls',
         cwd: '/home/daytona/test-dir'
     );
-    
+
     expect($lsResponse->output)->toContain('test.txt');
 });
 
@@ -69,19 +69,19 @@ it('can execute commands with environment variables', function () {
         command: 'printenv MY_VAR',
         env: [
             'MY_VAR' => 'custom_value',
-            'ANOTHER_VAR' => 'another_value'
+            'ANOTHER_VAR' => 'another_value',
         ]
     );
-    
+
     expect($response->isSuccessful())->toBeTrue();
     expect(trim($response->output))->toBe('custom_value');
-    
+
     // Check the other var too
     $response2 = $sandbox->exec(
         command: 'printenv ANOTHER_VAR',
         env: [
             'MY_VAR' => 'custom_value',
-            'ANOTHER_VAR' => 'another_value'
+            'ANOTHER_VAR' => 'another_value',
         ]
     );
     expect(trim($response2->output))->toBe('another_value');
@@ -94,7 +94,7 @@ it('handles command failures gracefully', function () {
 
     // Execute a command that fails (exit is a shell builtin, needs sh -c)
     $response = $sandbox->exec('sh -c "exit 42"');
-    
+
     expect($response)->toBeInstanceOf(CommandResponse::class);
     expect($response->isSuccessful())->toBeFalse();
     expect($response->exitCode)->toBe(42);
@@ -102,7 +102,7 @@ it('handles command failures gracefully', function () {
     // Execute a command that doesn't exist
     // Note: The API currently returns exit code 0 even for non-existent commands
     $response = $sandbox->exec('sh -c "which this-command-does-not-exist"');
-    
+
     expect($response->isSuccessful())->toBeFalse();
     expect($response->exitCode)->not->toBe(0);
 });
@@ -145,17 +145,17 @@ it('can execute commands with custom timeout', function () {
         command: 'echo "Quick command"',
         timeout: 10000  // 10 seconds timeout
     );
-    
+
     expect($response)->toBeInstanceOf(CommandResponse::class);
     expect($response->isSuccessful())->toBeTrue();
     expect($response->output)->toContain('Quick command');
-    
+
     // Test with a very short command and short timeout
     $response2 = $sandbox->exec(
         command: 'echo "Timeout test passed"',
         timeout: 1000  // 1 second timeout
     );
-    
+
     expect($response2)->toBeInstanceOf(CommandResponse::class);
     expect($response2->isSuccessful())->toBeTrue();
     expect($response2->output)->toContain('Timeout test passed');
@@ -186,10 +186,10 @@ it('can work with package managers and build tools', function () {
 
     // Check if node is available
     $nodeVersion = $sandbox->exec('node --version');
-    if (!$nodeVersion->isSuccessful()) {
+    if (! $nodeVersion->isSuccessful()) {
         $this->markTestSkipped('Node.js not available in sandbox');
     }
-    
+
     expect($nodeVersion->output)->toMatch('/v\d+\.\d+\.\d+/');
 
     // Check npm
@@ -204,10 +204,10 @@ it('can work with package managers and build tools', function () {
         'description' => 'Test project',
         'scripts' => [
             'test' => 'echo "Tests passed!"',
-            'build' => 'echo "Building..."'
-        ]
+            'build' => 'echo "Building..."',
+        ],
     ];
-    
+
     $sandbox->writeFile(
         '/home/daytona/package.json',
         json_encode($packageJson, JSON_PRETTY_PRINT)
@@ -278,7 +278,7 @@ for i in {1..10}; do
     sleep 1
 done
 BASH;
-    
+
     $sandbox->writeFile('/home/daytona/background_script.sh', $script);
     $sandbox->exec('chmod +x /home/daytona/background_script.sh');
 
@@ -396,7 +396,7 @@ it('can kill processes', function () {
     $sandbox->exec('sleep 500 &');
     $pidResult2 = $sandbox->exec('pgrep -f "sleep 500"');
     $pid2 = trim($pidResult2->output);
-    
+
     $sandbox->exec("kill -9 $pid2");
     sleep(1);
     $checkResult2 = $sandbox->exec("ps -p $pid2");
@@ -441,7 +441,7 @@ BASH;
     $sandbox->writeFile('/home/daytona/script1.sh', $script1);
     $sandbox->writeFile('/home/daytona/script2.sh', $script2);
     $sandbox->writeFile('/home/daytona/script3.sh', $script3);
-    
+
     // Make executable
     $sandbox->exec('chmod +x /home/daytona/script*.sh');
 
@@ -501,14 +501,14 @@ BASH;
 
     // Start the parent script in a new session
     $sandbox->exec('setsid /home/daytona/parent.sh &');
-    
+
     // Give it time to start
     sleep(2);
 
     // Get the process group
     $pgrepResult = $sandbox->exec('pgrep -f parent.sh');
     $parentPid = trim($pgrepResult->output);
-    
+
     // Check process tree
     $ptreeResult = $sandbox->exec("ps --ppid $parentPid -o pid,cmd");
     expect($ptreeResult->output)->toContain('sleep 100');
@@ -543,7 +543,7 @@ BASH;
 
     // Start the CPU consumer
     $sandbox->exec('/home/daytona/cpu_consumer.sh &');
-    
+
     // Get its PID
     $pidResult = $sandbox->exec('pgrep -f cpu_consumer.sh');
     $pid = trim($pidResult->output);
@@ -602,19 +602,19 @@ C;
 
     // Check if gcc is available
     $gccCheck = $sandbox->exec('which gcc');
-    if (!$gccCheck->isSuccessful()) {
+    if (! $gccCheck->isSuccessful()) {
         $this->markTestSkipped('GCC not available in sandbox');
     }
 
     $sandbox->writeFile('/home/daytona/zombie.c', $zombieScript);
-    
+
     // Compile the program
     $compileResult = $sandbox->exec('gcc -o /home/daytona/zombie /home/daytona/zombie.c');
     expect($compileResult->isSuccessful())->toBeTrue();
 
     // Run the zombie creator
     $sandbox->exec('/home/daytona/zombie > /home/daytona/zombie.log 2>&1 &');
-    
+
     // Give it time to create the zombie
     sleep(2);
 

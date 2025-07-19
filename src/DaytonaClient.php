@@ -415,7 +415,6 @@ class DaytonaClient
             }
 
             $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/clone", $payload);
-            ray($response->json())->orange()->label('git clone');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'clone repository');
@@ -449,7 +448,6 @@ class DaytonaClient
             $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/branches", [
                 'path' => $repoPath,
             ]);
-            ray($response->json())->orange()->label('git list branches');;
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'list branches');
@@ -482,7 +480,6 @@ class DaytonaClient
                 'Path' => $repoPath,
                 'Files' => $filePaths,
             ]);
-            ray($response->json())->orange()->label('git add');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'add files to Git');
@@ -499,7 +496,7 @@ class DaytonaClient
 
     /**
      * Commit changes in Git.
-     * 
+     *
      * @return string The commit hash
      */
     public function gitCommit(string $sandboxId, string $repoPath, string $message, string $authorName, string $authorEmail): string
@@ -521,8 +518,9 @@ class DaytonaClient
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'commit changes');
             }
-            
+
             $data = $response->json();
+
             return $data['hash'] ?? '';
         } catch (RequestException $e) {
             Log::error('Failed to commit changes in Daytona sandbox', [
@@ -588,7 +586,6 @@ class DaytonaClient
             $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/status", [
                 'path' => $repoPath,
             ]);
-            ray($response->json())->orange()->label('git status');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'get Git status');
@@ -619,7 +616,6 @@ class DaytonaClient
             $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/history", [
                 'path' => $repoPath,
             ]);
-            ray($response->json())->orange()->label('git history');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'get Git history');
@@ -705,7 +701,7 @@ class DaytonaClient
                 'destination' => $destination,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/move?source=".urlencode($source)."&destination=".urlencode($destination));
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/move?source=".urlencode($source).'&destination='.urlencode($destination));
 
             if (! $response->successful()) {
                 $error = $response->json('error', 'Unknown error');
