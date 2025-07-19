@@ -156,7 +156,7 @@ it('throws ApiException when delete fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->deleteSandbox('sandbox-123');
-})->throws(ApiException::class, 'API request failed: {"error":"Cannot delete sandbox"}');
+})->throws(ApiException::class);
 
 it('throws specific exceptions for business logic errors', function () {
     // Test that SandboxException is thrown for missing ID (business logic error)

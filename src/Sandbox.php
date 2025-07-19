@@ -220,11 +220,9 @@ class Sandbox
         return $this;
     }
 
-    public function gitCommit(string $repoPath, string $message, string $authorName, string $authorEmail): self
+    public function gitCommit(string $repoPath, string $message, string $authorName, string $authorEmail): string
     {
-        $this->client->gitCommit($this->id, $repoPath, $message, $authorName, $authorEmail);
-
-        return $this;
+        return $this->client->gitCommit($this->id, $repoPath, $message, $authorName, $authorEmail);
     }
 
     public function gitPush(string $repoPath, ?string $username = null, ?string $password = null): self

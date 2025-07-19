@@ -503,11 +503,27 @@ $sandbox->delete();
 
 ## Testing
 
-Run the test suite:
-
 ```bash
-./vendor/bin/pest
+# Run feature tests only (default)
+composer test
+
+# Run integration tests (requires Daytona server)
+composer test:integration
+
+# Run all tests
+composer test:all
+
+# Run tests with coverage
+composer test-coverage
 ```
+
+### Test Configuration
+
+The test suite is split into two groups:
+- **Feature tests**: Unit tests that don't require external services
+- **Integration tests**: Tests that require a running Daytona server
+
+By default, `composer test` or `vendor/bin/pest` only runs feature tests. This allows for quick testing during development without needing a Daytona server.
 
 ## Error Handling
 
