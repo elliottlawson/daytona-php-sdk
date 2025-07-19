@@ -75,4 +75,9 @@ jobs:
           composer update --prefer-dist --no-interaction
 
       - name: Execute tests
-        run: vendor/bin/pest --parallel
+        run: |
+          if [[ "${{ matrix.pest }}" == "3.*" ]]; then
+            vendor/bin/pest --parallel
+          else
+            vendor/bin/pest
+          fi
