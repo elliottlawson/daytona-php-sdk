@@ -10,6 +10,7 @@ use ElliottLawson\Daytona\DTOs\FilePermissionsParams;
 use ElliottLawson\Daytona\DTOs\GitBranchesResponse;
 use ElliottLawson\Daytona\DTOs\GitHistoryResponse;
 use ElliottLawson\Daytona\DTOs\GitStatusResponse;
+use ElliottLawson\Daytona\DTOs\PortPreviewUrl;
 use ElliottLawson\Daytona\DTOs\ReplaceRequest;
 use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
@@ -1074,6 +1075,47 @@ class DaytonaClient
 
             // Wait before next check
             usleep($checkInterval * 1000000); // Convert to microseconds
+        }
+    }
+
+    /**
+     * Get preview URL for a sandbox port.
+     *
+     * @param  string  $sandboxId  The sandbox ID
+     * @param  int  $port  The port number to get preview URL for
+     * @return PortPreviewUrl The preview URL information including URL and access token
+     *
+     * @throws ApiException If the API request fails
+     */
+    public function getPortPreviewUrl(string $sandboxId, int $port): PortPreviewUrl
+    {
+        try {
+            Log::debug('Getting preview URL for sandbox port', [
+                'sandboxId' => $sandboxId,
+                'port' => $port,
+            ]);
+
+            $response = $this->client()->get("sandbox/{$sandboxId}/ports/{$port}/preview-url");
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'get preview URL');
+            }
+
+            $data = $response->json();
+            Log::debug('Preview URL retrieved successfully', [
+                'sandboxId' => $sandboxId,
+                'port' => $port,
+                'url' => $data['url'] ?? null,
+            ]);
+
+            return PortPreviewUrl::fromArray($data);
+        } catch (RequestException $e) {
+            Log::error('Failed to get preview URL for sandbox port', [
+                'sandboxId' => $sandboxId,
+                'port' => $port,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::requestFailed('get preview URL', $e->getMessage(), $e);
         }
     }
 }

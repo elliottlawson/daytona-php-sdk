@@ -320,4 +320,25 @@ class Sandbox
 
         return $results[0] ?? new ReplaceResult($file, false, 'No result returned');
     }
+
+    /**
+     * Get preview URL for a sandbox port.
+     *
+     * Retrieves the preview link for a sandbox at the specified port.
+     * The preview URL allows external access to services running in the sandbox.
+     *
+     * @param  int  $port  The port number to get preview URL for
+     * @return \ElliottLawson\Daytona\DTOs\PortPreviewUrl The preview URL information
+     *
+     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the API request fails
+     *
+     * @example
+     * $previewInfo = $sandbox->getPreviewLink(3000);
+     * echo "Preview URL: " . $previewInfo->url;
+     * echo "Access Token: " . $previewInfo->token;
+     */
+    public function getPreviewLink(int $port): \ElliottLawson\Daytona\DTOs\PortPreviewUrl
+    {
+        return $this->client->getPortPreviewUrl($this->id, $port);
+    }
 }
