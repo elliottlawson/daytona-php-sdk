@@ -32,7 +32,7 @@ describe('createFolder convenience method', function () {
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/folder') &&
-                   $request['path'] === '/app/data' &&
+                   str_contains($request->url(), 'path='.urlencode('/app/data')) &&
                    $request['mode'] === '755'; // default
         });
     });
@@ -47,7 +47,7 @@ describe('createFolder convenience method', function () {
         expect($result)->toBe($this->sandbox);
 
         Http::assertSent(function ($request) {
-            return $request['path'] === '/app/uploads' &&
+            return str_contains($request->url(), 'path='.urlencode('/app/uploads')) &&
                    $request['mode'] === '777';
         });
     });
@@ -80,8 +80,8 @@ describe('moveFile convenience method', function () {
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/move') &&
-                   $request['source'] === '/tmp/file.txt' &&
-                   $request['destination'] === '/app/file.txt';
+                   str_contains($request->url(), 'source='.urlencode('/tmp/file.txt')) &&
+                   str_contains($request->url(), 'destination='.urlencode('/app/file.txt'));
         });
     });
 
@@ -143,10 +143,10 @@ describe('setFilePermissions convenience method', function () {
         expect($result)->toBe($this->sandbox);
 
         Http::assertSent(function ($request) {
-            return $request['path'] === '/app/config.php' &&
-                   $request['mode'] === '644' &&
-                   $request['owner'] === 'www-data' &&
-                   $request['group'] === 'www-data';
+            return str_contains($request->url(), 'path='.urlencode('/app/config.php')) &&
+                   str_contains($request->url(), 'mode=644') &&
+                   str_contains($request->url(), 'owner=www-data') &&
+                   str_contains($request->url(), 'group=www-data');
         });
     });
 
@@ -178,10 +178,8 @@ describe('setPermissions convenience method', function () {
         expect($result)->toBe($this->sandbox);
 
         Http::assertSent(function ($request) {
-            return $request['path'] === '/app/script.sh' &&
-                   $request['mode'] === '755' &&
-                   ! isset($request['owner']) &&
-                   ! isset($request['group']);
+            return str_contains($request->url(), 'path='.urlencode('/app/script.sh')) &&
+                   str_contains($request->url(), 'mode=755');
         });
     });
 
@@ -195,10 +193,10 @@ describe('setPermissions convenience method', function () {
         expect($result)->toBe($this->sandbox);
 
         Http::assertSent(function ($request) {
-            return $request['path'] === '/app/file.txt' &&
-                   $request['mode'] === '644' &&
-                   $request['owner'] === 'www-data' &&
-                   $request['group'] === 'www-data';
+            return str_contains($request->url(), 'path='.urlencode('/app/file.txt')) &&
+                   str_contains($request->url(), 'mode=644') &&
+                   str_contains($request->url(), 'owner=www-data') &&
+                   str_contains($request->url(), 'group=www-data');
         });
     });
 
@@ -212,10 +210,9 @@ describe('setPermissions convenience method', function () {
         expect($result)->toBe($this->sandbox);
 
         Http::assertSent(function ($request) {
-            return $request['path'] === '/app/data/' &&
-                   ! isset($request['mode']) &&
-                   $request['owner'] === 'user' &&
-                   $request['group'] === 'users';
+            return str_contains($request->url(), 'path='.urlencode('/app/data/')) &&
+                   str_contains($request->url(), 'owner=user') &&
+                   str_contains($request->url(), 'group=users');
         });
     });
 

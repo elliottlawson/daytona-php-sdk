@@ -216,7 +216,7 @@ describe('Sandbox Discovery and Filtering', function () {
 
             Http::assertSent(function ($request) {
                 return str_contains($request->url(), 'sandbox') &&
-                       $request->data()['state'] === 'started';
+                       str_contains($request->url(), 'state=started');
             });
         });
 
@@ -236,8 +236,8 @@ describe('Sandbox Discovery and Filtering', function () {
 
             Http::assertSent(function ($request) {
                 return str_contains($request->url(), 'sandbox') &&
-                       $request->data()['user'] === 'john' &&
-                       $request->data()['state'] === 'started';
+                       str_contains($request->url(), 'user=john') &&
+                       str_contains($request->url(), 'state=started');
             });
         });
     });

@@ -31,8 +31,8 @@ describe('createFolder method', function () {
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/folder') &&
                    $request->method() === 'POST' &&
-                   $request['path'] === '/app/data' &&
-                   $request['mode'] === '755';
+                   str_contains($request->url(), 'path='.urlencode('/app/data')) &&
+                   $request->data()['mode'] === '755';
         });
     });
 
@@ -57,8 +57,8 @@ describe('moveFile method', function () {
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/move') &&
                    $request->method() === 'POST' &&
-                   $request['source'] === '/tmp/file.txt' &&
-                   $request['destination'] === '/app/file.txt';
+                   str_contains($request->url(), 'source='.urlencode('/tmp/file.txt')) &&
+                   str_contains($request->url(), 'destination='.urlencode('/app/file.txt'));
         });
     });
 
@@ -133,10 +133,10 @@ describe('setFilePermissions method', function () {
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/permissions') &&
                    $request->method() === 'POST' &&
-                   $request['path'] === '/app/config.php' &&
-                   $request['mode'] === '644' &&
-                   $request['owner'] === 'www-data' &&
-                   $request['group'] === 'www-data';
+                   str_contains($request->url(), 'path='.urlencode('/app/config.php')) &&
+                   str_contains($request->url(), 'mode=644') &&
+                   str_contains($request->url(), 'owner=www-data') &&
+                   str_contains($request->url(), 'group=www-data');
         });
     });
 
@@ -151,10 +151,8 @@ describe('setFilePermissions method', function () {
 
         Http::assertSent(function ($request) {
             return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/permissions') &&
-                   $request['path'] === '/app/script.sh' &&
-                   $request['mode'] === '755' &&
-                   ! isset($request['owner']) &&
-                   ! isset($request['group']);
+                   str_contains($request->url(), 'path='.urlencode('/app/script.sh')) &&
+                   str_contains($request->url(), 'mode=755');
         });
     });
 

@@ -13,6 +13,7 @@ use ElliottLawson\Daytona\DTOs\GitStatusResponse;
 use ElliottLawson\Daytona\DTOs\ReplaceRequest;
 use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
+use ElliottLawson\Daytona\DTOs\SandboxFilter;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\DTOs\SearchMatch;

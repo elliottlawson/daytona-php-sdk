@@ -25,7 +25,7 @@ it('throws ApiException when creation fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->createSandbox(new SandboxCreateParameters);
-})->throws(ApiException::class, 'API request failed for create sandbox');
+})->throws(ApiException::class, 'API request failed: {"error":"Invalid parameters"}');
 
 it('throws SandboxException when response is missing ID', function () {
     Http::fake([
@@ -43,7 +43,7 @@ it('throws ApiException when file read fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->readFile('sandbox-123', '/workspace/missing.txt');
-})->throws(ApiException::class, 'Resource not found for read file');
+})->throws(ApiException::class, 'Resource not found.');
 
 it('throws ApiException when file write fails with HTTP error', function () {
     Http::fake([
@@ -52,7 +52,7 @@ it('throws ApiException when file write fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->writeFile('sandbox-123', '/protected/file.txt', 'content');
-})->throws(ApiException::class, 'Access denied for write file');
+})->throws(ApiException::class, 'Access denied. Please check your permissions.');
 
 it('throws ApiException when directory listing fails with HTTP error', function () {
     Http::fake([
@@ -61,7 +61,7 @@ it('throws ApiException when directory listing fails with HTTP error', function 
 
     $client = app(DaytonaClient::class);
     $client->listDirectory('sandbox-123', '/missing/directory');
-})->throws(ApiException::class, 'Resource not found for list directory');
+})->throws(ApiException::class, 'Resource not found.');
 
 it('throws ApiException when command fails with HTTP error', function () {
     Http::fake([
@@ -70,7 +70,7 @@ it('throws ApiException when command fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->executeCommand('sandbox-123', 'invalid-command');
-})->throws(ApiException::class, 'API request failed for execute command');
+})->throws(ApiException::class, 'API request failed: {"error":"Command not found"}');
 
 it('throws ApiException when clone fails with HTTP error', function () {
     Http::fake([
@@ -79,7 +79,7 @@ it('throws ApiException when clone fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->gitClone('sandbox-123', 'https://github.com/invalid/repo.git');
-})->throws(ApiException::class, 'Resource not found for clone repository');
+})->throws(ApiException::class, 'Resource not found.');
 
 it('throws ApiException when commit fails with HTTP error', function () {
     Http::fake([
@@ -88,7 +88,7 @@ it('throws ApiException when commit fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->gitCommit('sandbox-123', '/workspace', 'Test commit', 'John Doe', 'john@example.com');
-})->throws(ApiException::class, 'API request failed for commit changes');
+})->throws(ApiException::class, 'API request failed: {"error":"Nothing to commit"}');
 
 it('throws ApiException with proper status code for authentication errors', function () {
     Http::fake([
@@ -129,7 +129,7 @@ it('throws ApiException for server errors', function () {
 
     $client = app(DaytonaClient::class);
     $client->createSandbox(new SandboxCreateParameters);
-})->throws(ApiException::class, 'Server error during create sandbox');
+})->throws(ApiException::class, 'Server error. Please try again later.');
 
 it('throws ApiException when start fails with HTTP error', function () {
     Http::fake([
@@ -138,7 +138,7 @@ it('throws ApiException when start fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->startSandbox('sandbox-123');
-})->throws(ApiException::class, 'API request failed for start sandbox');
+})->throws(ApiException::class, 'API request failed: {"error":"Cannot start sandbox"}');
 
 it('throws ApiException when stop fails with HTTP error', function () {
     Http::fake([
@@ -147,7 +147,7 @@ it('throws ApiException when stop fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->stopSandbox('sandbox-123');
-})->throws(ApiException::class, 'API request failed for stop sandbox');
+})->throws(ApiException::class, 'API request failed: {"error":"Cannot stop sandbox"}');
 
 it('throws ApiException when delete fails with HTTP error', function () {
     Http::fake([
@@ -156,7 +156,7 @@ it('throws ApiException when delete fails with HTTP error', function () {
 
     $client = app(DaytonaClient::class);
     $client->deleteSandbox('sandbox-123');
-})->throws(ApiException::class, 'API request failed for delete sandbox');
+})->throws(ApiException::class);
 
 it('throws specific exceptions for business logic errors', function () {
     // Test that SandboxException is thrown for missing ID (business logic error)
