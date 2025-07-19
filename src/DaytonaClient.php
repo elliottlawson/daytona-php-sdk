@@ -13,7 +13,6 @@ use ElliottLawson\Daytona\DTOs\GitStatusResponse;
 use ElliottLawson\Daytona\DTOs\ReplaceRequest;
 use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
-use ElliottLawson\Daytona\DTOs\SandboxFilter;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\DTOs\SearchMatch;
@@ -370,6 +369,12 @@ class DaytonaClient
             ]);
 
             return $response->successful();
+        } catch (ApiException $e) {
+            // Handle 404 responses - file doesn't exist
+            if ($e->getCode() === 404 || str_contains($e->getMessage(), 'not found') || str_contains($e->getMessage(), 'no such file')) {
+                return false;
+            }
+            throw FileSystemException::checkExistenceFailed($path, $e->getMessage(), $e);
         } catch (RequestException $e) {
             if (str_contains($e->getMessage(), '404') || str_contains($e->getMessage(), 'not found')) {
                 return false;
@@ -410,6 +415,7 @@ class DaytonaClient
             }
 
             $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/clone", $payload);
+            ray($response->json())->orange()->label('git clone');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'clone repository');
@@ -443,6 +449,7 @@ class DaytonaClient
             $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/branches", [
                 'path' => $repoPath,
             ]);
+            ray($response->json())->orange()->label('git list branches');;
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'list branches');
@@ -475,6 +482,7 @@ class DaytonaClient
                 'Path' => $repoPath,
                 'Files' => $filePaths,
             ]);
+            ray($response->json())->orange()->label('git add');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'add files to Git');
@@ -491,8 +499,10 @@ class DaytonaClient
 
     /**
      * Commit changes in Git.
+     * 
+     * @return string The commit hash
      */
-    public function gitCommit(string $sandboxId, string $repoPath, string $message, string $authorName, string $authorEmail): void
+    public function gitCommit(string $sandboxId, string $repoPath, string $message, string $authorName, string $authorEmail): string
     {
         try {
             Log::info('Committing changes in Daytona sandbox', [
@@ -511,6 +521,9 @@ class DaytonaClient
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'commit changes');
             }
+            
+            $data = $response->json();
+            return $data['hash'] ?? '';
         } catch (RequestException $e) {
             Log::error('Failed to commit changes in Daytona sandbox', [
                 'sandboxId' => $sandboxId,
@@ -575,6 +588,7 @@ class DaytonaClient
             $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/status", [
                 'path' => $repoPath,
             ]);
+            ray($response->json())->orange()->label('git status');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'get Git status');
@@ -605,6 +619,7 @@ class DaytonaClient
             $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/history", [
                 'path' => $repoPath,
             ]);
+            ray($response->json())->orange()->label('git history');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'get Git history');
@@ -653,8 +668,7 @@ class DaytonaClient
                 'mode' => $mode,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/folder", [
-                'path' => $path,
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/folder?path=".urlencode($path), [
                 'mode' => $mode,
             ]);
 
@@ -691,10 +705,7 @@ class DaytonaClient
                 'destination' => $destination,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/move", [
-                'source' => $source,
-                'destination' => $destination,
-            ]);
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/move?source=".urlencode($source)."&destination=".urlencode($destination));
 
             if (! $response->successful()) {
                 $error = $response->json('error', 'Unknown error');
@@ -761,8 +772,9 @@ class DaytonaClient
             ]);
 
             $queryParams = ['path' => $path] + $permissions->toArray();
+            $queryString = http_build_query($queryParams);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/permissions", $queryParams);
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/permissions?{$queryString}");
 
             if (! $response->successful()) {
                 $error = $response->json('error', 'Unknown error');

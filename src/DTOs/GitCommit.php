@@ -17,11 +17,11 @@ class GitCommit
     public static function fromArray(array $data): self
     {
         return new self(
-            hash: $data['hash'] ?? $data['sha'],
-            message: $data['message'],
-            author: $data['author'],
-            email: $data['email'],
-            date: $data['date'],
+            hash: $data['hash'] ?? $data['sha'] ?? '',
+            message: $data['message'] ?? '',
+            author: $data['author'] ?? '',
+            email: $data['email'] ?? '',
+            date: $data['date'] ?? $data['timestamp'] ?? $data['time'] ?? '',
             shortHash: $data['shortHash'] ?? $data['short_hash'] ?? null,
             files: $data['files'] ?? null,
         );

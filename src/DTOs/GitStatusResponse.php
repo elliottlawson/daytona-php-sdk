@@ -17,18 +17,42 @@ class GitStatusResponse
         public readonly ?bool $clean = null,
         public readonly ?int $ahead = null,
         public readonly ?int $behind = null,
+        public readonly ?bool $branchPublished = null,
     ) {}
 
     public static function fromArray(array $data): self
     {
+        // Parse fileStatus array into staged, unstaged, and untracked arrays
+        $staged = [];
+        $unstaged = [];
+        $untracked = [];
+        
+        if (isset($data['fileStatus']) && is_array($data['fileStatus'])) {
+            foreach ($data['fileStatus'] as $file) {
+                $name = $file['name'] ?? '';
+                $staging = $file['staging'] ?? '';
+                $worktree = $file['worktree'] ?? '';
+                
+                // Determine file status based on staging and worktree values
+                if ($staging === 'Untracked' || $worktree === 'Untracked') {
+                    $untracked[] = $name;
+                } elseif ($staging === 'Added' || $staging === 'Modified' || $staging === 'Deleted' || $staging === 'Renamed') {
+                    $staged[] = $name;
+                } elseif ($worktree === 'Modified' || $worktree === 'Deleted') {
+                    $unstaged[] = $name;
+                }
+            }
+        }
+        
         return new self(
-            staged: $data['staged'] ?? [],
-            unstaged: $data['unstaged'] ?? [],
-            untracked: $data['untracked'] ?? [],
-            branch: $data['branch'] ?? null,
-            clean: $data['clean'] ?? null,
-            ahead: $data['ahead'] ?? null,
-            behind: $data['behind'] ?? null,
+            staged: $staged,
+            unstaged: $unstaged,
+            untracked: $untracked,
+            branch: $data['currentBranch'] ?? null,
+            clean: empty($staged) && empty($unstaged) && empty($untracked),
+            ahead: $data['ahead'] ?? 0,
+            behind: $data['behind'] ?? 0,
+            branchPublished: $data['branchPublished'] ?? null,
         );
     }
 
@@ -42,6 +66,7 @@ class GitStatusResponse
             'clean' => $this->clean,
             'ahead' => $this->ahead,
             'behind' => $this->behind,
+            'branchPublished' => $this->branchPublished,
         ], fn ($value) => $value !== null);
     }
 

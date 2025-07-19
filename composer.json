@@ -30,13 +30,14 @@
     "autoload-dev": {
         "psr-4": {
             "ElliottLawson\\Daytona\\Tests\\": "tests/",
-            "Tests\\": ["tests/", "tests-integration/"]
+            "Tests\\": "tests/"
         }
     },
     "scripts": {
-        "test": "vendor/bin/pest",
-        "test-coverage": "vendor/bin/pest --coverage",
-        "test-integration": "vendor/bin/pest --configuration=phpunit-integration.xml"
+        "test": "vendor/bin/pest --testsuite=Feature",
+        "test:integration": "vendor/bin/pest --testsuite=Integration",
+        "test:all": "vendor/bin/pest",
+        "test-coverage": "vendor/bin/pest --coverage"
     },
     "config": {
         "sort-packages": true,
