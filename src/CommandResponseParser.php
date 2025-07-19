@@ -10,7 +10,7 @@ class CommandResponseParser
      * Parse command execution response from Daytona API.
      *
      * Handles various response formats that Daytona might return.
-     * 
+     *
      * Note: When Daytona returns exitCode -1, it means the actual exit code
      * couldn't be determined. Valid bash exit codes are 0-255, so -1 indicates
      * an unknown state rather than a specific failure or success.

@@ -50,7 +50,7 @@ class CommandResponse
 
     /**
      * Check if the exit code is known (i.e., not -1).
-     * 
+     *
      * When Daytona API returns -1, it means the actual exit code couldn't be determined.
      * Valid bash exit codes are 0-255.
      */
