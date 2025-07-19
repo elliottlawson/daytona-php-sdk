@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ElliottLawson\Daytona\DTOs\GitStatusResponse gitStatus(string $sandboxId, string $repoPath = '/workspace')
  * @method static \ElliottLawson\Daytona\DTOs\GitHistoryResponse gitHistory(string $sandboxId, string $repoPath = '/workspace')
  * @method static \ElliottLawson\Daytona\Sandbox sandboxFromResponse(\ElliottLawson\Daytona\DTOs\SandboxResponse $response)
+ * @method static \ElliottLawson\Daytona\DTOs\PortPreviewUrl getPortPreviewUrl(string $sandboxId, int $port)
  *
  * @see \ElliottLawson\Daytona\DaytonaClient
  */

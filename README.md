@@ -428,6 +428,35 @@ $sandbox->waitUntilStarted(timeout: 120); // Wait up to 2 minutes
 $sandbox->stop()->waitUntilStopped();
 ```
 
+#### Preview URLs
+
+Access services running in your sandbox through preview URLs:
+
+```php
+// Get preview URL for a specific port
+$previewInfo = $sandbox->getPreviewLink(3000);
+
+echo "Preview URL: " . $previewInfo->url;
+echo "Access Token: " . $previewInfo->token;
+
+// For programmatic access (e.g., curl), use the authorization token:
+$response = Http::withHeaders([
+    'x-daytona-preview-token' => $previewInfo->token
+])->get($previewInfo->url);
+
+// Multiple ports example
+$ports = [3000, 8080, 5000];
+foreach ($ports as $port) {
+    $preview = $sandbox->getPreviewLink($port);
+    echo "Port {$port}: {$preview->url}\n";
+}
+```
+
+Preview URLs allow external access to services running in your sandbox:
+- **Public sandboxes**: URLs are publicly accessible
+- **Private sandboxes**: Require authentication token in `x-daytona-preview-token` header
+- **URL format**: `https://{port}-{sandboxId}.{runner-domain}`
+
 #### Error Handling
 
 The SDK provides specific exception types for different error scenarios:
