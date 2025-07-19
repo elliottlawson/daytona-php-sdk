@@ -75,4 +75,10 @@ jobs:
           composer update --prefer-dist --no-interaction
 
       - name: Execute tests
-        run: vendor/bin/pest
+        run: |
+          echo "Running Pest tests..."
+          if [ -f phpunit.xml ]; then
+            ./vendor/bin/pest --configuration=phpunit.xml
+          else
+            ./vendor/bin/pest
+          fi
