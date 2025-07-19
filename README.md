@@ -255,6 +255,14 @@ if ($result->isSuccessful()) {
 $result = $sandbox->exec('composer install');
 echo $result->output;
 
+// Note about exit codes:
+// - Exit code 0 means success
+// - Exit codes 1-255 indicate various error conditions
+// - Exit code -1 means the actual exit code couldn't be determined by Daytona
+if (!$result->hasKnownExitCode()) {
+    echo "Warning: Exit code is unknown";
+}
+
 // Execute with specific working directory
 $result = $sandbox->exec('ls -la', '/workspace');
 
