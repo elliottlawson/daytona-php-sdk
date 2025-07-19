@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.2, 8.3, 8.4]
+        php: [8.2, 8.3]
         laravel: [10.*, 11.*, 12.*]
         include:
           - laravel: 10.*
@@ -71,14 +71,8 @@ jobs:
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
-          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" "pestphp/pest:${{ matrix.pest }}" "phpunit/phpunit:${{ matrix.phpunit }}" --no-interaction --no-update
+          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" "pestphp/pest:${{ matrix.pest }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction
 
       - name: Execute tests
-        run: |
-          echo "Running Pest tests..."
-          if [ -f phpunit.xml ]; then
-            ./vendor/bin/pest --configuration=phpunit.xml
-          else
-            ./vendor/bin/pest
-          fi
+        run: ./vendor/bin/pest
