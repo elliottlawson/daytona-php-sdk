@@ -7,7 +7,6 @@ composer.lock
 .DS_Store
 *.swp
 *.swo
-phpunit.xml
 .env
 .env.testing
 coverage
