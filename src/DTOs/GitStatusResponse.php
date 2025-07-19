@@ -26,13 +26,13 @@ class GitStatusResponse
         $staged = [];
         $unstaged = [];
         $untracked = [];
-        
+
         if (isset($data['fileStatus']) && is_array($data['fileStatus'])) {
             foreach ($data['fileStatus'] as $file) {
                 $name = $file['name'] ?? '';
                 $staging = $file['staging'] ?? '';
                 $worktree = $file['worktree'] ?? '';
-                
+
                 // Determine file status based on staging and worktree values
                 if ($staging === 'Untracked' || $worktree === 'Untracked') {
                     $untracked[] = $name;
@@ -43,7 +43,7 @@ class GitStatusResponse
                 }
             }
         }
-        
+
         return new self(
             staged: $staged,
             unstaged: $unstaged,

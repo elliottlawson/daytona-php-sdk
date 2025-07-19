@@ -28,12 +28,12 @@ it('can clone a public repository', function () {
 
     // Verify clone worked by checking directory exists
     $listing = $sandbox->listDirectory('/home/daytona');
-    $allItems = array_map(fn($file) => $file->name, $listing->files);
+    $allItems = array_map(fn ($file) => $file->name, $listing->files);
     expect($allItems)->toContain('test-repo');
 
     // Verify repository contents
-    expect($sandbox->fileExists($repoPath . '/.git'))->toBeTrue();
-    expect($sandbox->fileExists($repoPath . '/README'))->toBeTrue();
+    expect($sandbox->fileExists($repoPath.'/.git'))->toBeTrue();
+    expect($sandbox->fileExists($repoPath.'/README'))->toBeTrue();
 });
 
 it('can clone a repository with specific branch', function () {
@@ -79,7 +79,7 @@ it('can clone with authentication parameters', function () {
     $sandbox = $this->client->createSandbox(new SandboxCreateParameters(
         labels: ['php-sdk-test' => 'true']
     ));
-    
+
     // Test that authentication parameters are accepted
     // This will fail but we're testing the API accepts the parameters
     try {

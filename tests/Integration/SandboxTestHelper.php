@@ -4,7 +4,6 @@ namespace Tests\Integration;
 
 use ElliottLawson\Daytona\DaytonaClient;
 use ElliottLawson\Daytona\DTOs\Config;
-use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
 use ElliottLawson\Daytona\Sandbox;
 
 /**
@@ -21,7 +20,7 @@ trait SandboxTestHelper
     {
         $apiKey = env('DAYTONA_API_KEY');
 
-        if (!$apiKey) {
+        if (! $apiKey) {
             $this->markTestSkipped('DAYTONA_API_KEY environment variable is not set');
         }
 
@@ -39,7 +38,7 @@ trait SandboxTestHelper
     {
         try {
             $testSandboxes = $this->client->listSandboxes(['php-sdk-test' => 'true']);
-            
+
             foreach ($testSandboxes as $sandbox) {
                 try {
                     $sandbox->delete();
@@ -51,5 +50,4 @@ trait SandboxTestHelper
             // Continue
         }
     }
-
 }
