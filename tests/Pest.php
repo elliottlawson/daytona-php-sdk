@@ -7,4 +7,6 @@ use ElliottLawson\Daytona\Tests\TestCase;
 uses(TestCase::class)->in('Feature');
 
 // Use IntegrationTestCase for integration tests
-uses(IntegrationTestCase::class)->in('Integration');
+uses(IntegrationTestCase::class)
+    ->group('integration')
+    ->in('Integration');

@@ -34,9 +34,9 @@
         }
     },
     "scripts": {
-        "test": "vendor/bin/pest --testsuite=Feature",
-        "test:integration": "vendor/bin/pest --testsuite=Integration",
-        "test:all": "vendor/bin/pest",
+        "test": "vendor/bin/pest",
+        "test:integration": "vendor/bin/pest --configuration phpunit-integration.xml",
+        "test:all": "vendor/bin/pest && vendor/bin/pest --configuration phpunit-integration.xml",
         "test-coverage": "vendor/bin/pest --coverage"
     },
     "config": {
