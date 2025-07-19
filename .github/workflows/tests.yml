@@ -74,5 +74,10 @@ jobs:
           composer require --dev "orchestra/testbench:${{ matrix.testbench }}" "pestphp/pest:${{ matrix.pest }}" --no-interaction --no-update
           composer update --prefer-dist --no-interaction
 
+      - name: Debug working directory
+        run: |
+          echo "PWD: $(pwd)"
+          ls -al
+
       - name: Execute tests
         run: ./vendor/bin/pest --configuration=phpunit.xml
