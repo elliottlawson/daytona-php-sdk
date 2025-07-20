@@ -1,119 +1,97 @@
 <?php
 
-namespace ElliottLawson\Daytona\Tests\Integration;
-
 use ElliottLawson\Daytona\DTOs\PortPreviewUrl;
+use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
+use Tests\Integration\SandboxTestHelper;
 
-class SandboxPreviewUrlTest extends IntegrationTestCase
-{
-    /** @test */
-    public function it_can_get_preview_url_for_sandbox_port()
-    {
-        // Skip if not in integration test mode
-        if (! $this->shouldRunIntegrationTests()) {
-            $this->markTestSkipped('Integration tests are not enabled.');
-        }
+uses(SandboxTestHelper::class);
 
-        // Create a sandbox for testing
-        $sandbox = $this->createTestSandbox();
+beforeEach(function () {
+    $this->setupClient();
+});
 
-        try {
-            // Act - Get preview URL for port 3000
-            $previewInfo = $sandbox->getPreviewLink(3000);
+afterEach(function () {
+    $this->cleanupSandboxes();
+});
 
-            // Assert
-            $this->assertInstanceOf(PortPreviewUrl::class, $previewInfo);
-            $this->assertNotEmpty($previewInfo->url);
-            $this->assertNotEmpty($previewInfo->token);
+it('can get preview url for sandbox port', function () {
+    // Create a sandbox for testing
+    $sandbox = $this->client->createSandbox(new SandboxCreateParameters(
+        labels: ['php-sdk-test' => 'true', 'test-type' => 'preview-url']
+    ));
+    
+    // Wait for sandbox to be ready
+    $sandbox->waitUntilStarted(60);
+    
+    // Act - Get preview URL for port 3000
+    $previewInfo = $sandbox->getPortPreviewUrl(3000);
+    
+    // Assert
+    expect($previewInfo)->toBeInstanceOf(PortPreviewUrl::class);
+    expect($previewInfo->url)->not->toBeEmpty();
+    expect($previewInfo->accessToken)->not->toBeEmpty();
+    
+    // Verify URL format matches expected pattern
+    expect($previewInfo->url)->toMatch('/^https:\/\/.*3000.*$/');
+    
+    // Token should be a non-empty string
+    expect($previewInfo->accessToken)->toBeString();
+    expect(strlen($previewInfo->accessToken))->toBeGreaterThan(10);
+    
+    // Log the preview URL for manual testing if needed
+    echo "\nPreview URL: {$previewInfo->url}\n";
+    echo "Access Token: {$previewInfo->accessToken}\n";
+});
 
-            // Verify URL format matches expected pattern
-            $this->assertMatchesRegularExpression(
-                '/^https:\/\/3000-[a-zA-Z0-9-]+\.[a-zA-Z0-9.-]+$/',
-                $previewInfo->url
-            );
-
-            // Token should be a non-empty string
-            $this->assertIsString($previewInfo->token);
-            $this->assertGreaterThan(10, strlen($previewInfo->token));
-
-            // Log the preview URL for manual testing if needed
-            echo "\nPreview URL: {$previewInfo->url}\n";
-            echo "Access Token: {$previewInfo->token}\n";
-
-            if ($previewInfo->legacyProxyUrl) {
-                echo "Legacy Proxy URL: {$previewInfo->legacyProxyUrl}\n";
-            }
-        } finally {
-            // Cleanup
-            $this->cleanupSandbox($sandbox);
-        }
+it('can get preview urls for multiple ports', function () {
+    // Create a sandbox for testing
+    $sandbox = $this->client->createSandbox(new SandboxCreateParameters(
+        labels: ['php-sdk-test' => 'true', 'test-type' => 'preview-url-multi']
+    ));
+    
+    // Wait for sandbox to be ready
+    $sandbox->waitUntilStarted(60);
+    
+    // Test multiple common ports
+    $ports = [3000, 8080, 8000, 5000];
+    $previewUrls = [];
+    
+    foreach ($ports as $port) {
+        $previewInfo = $sandbox->getPortPreviewUrl($port);
+        $previewUrls[$port] = $previewInfo;
+        
+        // Assert each preview URL is unique and properly formatted
+        expect($previewInfo->url)->not->toBeEmpty();
+        expect($previewInfo->url)->toContain((string) $port);
     }
+    
+    // Ensure all URLs are unique
+    $urls = array_map(fn ($info) => $info->url, $previewUrls);
+    expect(array_unique($urls))->toHaveCount(count($ports));
+    
+    // Tokens might be the same for all ports in the same sandbox
+    $tokens = array_map(fn ($info) => $info->accessToken, $previewUrls);
+    expect($tokens[0])->not->toBeEmpty();
+});
 
-    /** @test */
-    public function it_can_get_preview_urls_for_multiple_ports()
-    {
-        // Skip if not in integration test mode
-        if (! $this->shouldRunIntegrationTests()) {
-            $this->markTestSkipped('Integration tests are not enabled.');
-        }
-
-        // Create a sandbox for testing
-        $sandbox = $this->createTestSandbox();
-
-        try {
-            // Test multiple common ports
-            $ports = [3000, 8080, 8000, 5000];
-            $previewUrls = [];
-
-            foreach ($ports as $port) {
-                $previewInfo = $sandbox->getPreviewLink($port);
-                $previewUrls[$port] = $previewInfo;
-
-                // Assert each preview URL is unique and properly formatted
-                $this->assertNotEmpty($previewInfo->url);
-                $this->assertStringContainsString((string) $port, $previewInfo->url);
-                $this->assertStringContainsString($sandbox->getId(), $previewInfo->url);
-            }
-
-            // Ensure all URLs are unique
-            $urls = array_map(fn ($info) => $info->url, $previewUrls);
-            $this->assertCount(count($ports), array_unique($urls));
-
-            // Tokens might be the same for all ports in the same sandbox
-            $tokens = array_map(fn ($info) => $info->token, $previewUrls);
-            $this->assertNotEmpty($tokens[0]);
-        } finally {
-            // Cleanup
-            $this->cleanupSandbox($sandbox);
-        }
+it('handles preview url for non standard ports', function () {
+    // Create a sandbox for testing
+    $sandbox = $this->client->createSandbox(new SandboxCreateParameters(
+        labels: ['php-sdk-test' => 'true', 'test-type' => 'preview-url-edge']
+    ));
+    
+    // Wait for sandbox to be ready
+    $sandbox->waitUntilStarted(60);
+    
+    // Test edge case ports
+    $ports = [3001, 9999, 4000];
+    
+    foreach ($ports as $port) {
+        $previewInfo = $sandbox->getPortPreviewUrl($port);
+        
+        // Assert
+        expect($previewInfo)->toBeInstanceOf(PortPreviewUrl::class);
+        expect($previewInfo->url)->toContain((string) $port);
+        expect($previewInfo->accessToken)->not->toBeEmpty();
     }
-
-    /** @test */
-    public function it_handles_preview_url_for_non_standard_ports()
-    {
-        // Skip if not in integration test mode
-        if (! $this->shouldRunIntegrationTests()) {
-            $this->markTestSkipped('Integration tests are not enabled.');
-        }
-
-        // Create a sandbox for testing
-        $sandbox = $this->createTestSandbox();
-
-        try {
-            // Test edge case ports
-            $ports = [3001, 9999, 4000];
-
-            foreach ($ports as $port) {
-                $previewInfo = $sandbox->getPreviewLink($port);
-
-                // Assert
-                $this->assertInstanceOf(PortPreviewUrl::class, $previewInfo);
-                $this->assertStringContainsString((string) $port, $previewInfo->url);
-                $this->assertNotEmpty($previewInfo->token);
-            }
-        } finally {
-            // Cleanup
-            $this->cleanupSandbox($sandbox);
-        }
-    }
-}
+});

@@ -43,7 +43,6 @@ it('can execute commands with custom working directory', function () {
         command: 'pwd',
         cwd: '/home/daytona/test-dir'
     );
-    ray($response)->orange();
 
     expect($response->isSuccessful())->toBeTrue();
     expect(trim($response->output))->toBe('/home/daytona/test-dir');

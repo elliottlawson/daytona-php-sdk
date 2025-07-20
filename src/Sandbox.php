@@ -10,6 +10,10 @@ use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\DTOs\SearchMatch;
+use ElliottLawson\Daytona\DTOs\SessionCommandStatus;
+use ElliottLawson\Daytona\DTOs\SessionExecuteRequest;
+use ElliottLawson\Daytona\DTOs\SessionExecuteResponse;
+use ElliottLawson\Daytona\DTOs\SessionResponse;
 
 class Sandbox
 {
@@ -340,5 +344,92 @@ class Sandbox
     public function getPreviewLink(int $port): \ElliottLawson\Daytona\DTOs\PortPreviewUrl
     {
         return $this->client->getPortPreviewUrl($this->id, $port);
+    }
+
+    // Session management methods
+
+    /**
+     * Create a new session for executing long-running commands.
+     *
+     * @param  string|null  $sessionId  Optional session ID. If not provided, a UUID will be generated.
+     * @return Session The created session instance
+     *
+     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the API request fails
+     *
+     * @example
+     * $session = $sandbox->createSession();
+     * $command = $session->executeCommand('php -S localhost:8000', true);
+     * $session->streamLogs($command->getId(), function($chunk) {
+     *     echo $chunk;
+     * });
+     */
+    public function createSession(?string $sessionId = null): Session
+    {
+        if ($sessionId === null) {
+            $sessionId = \Ramsey\Uuid\Uuid::uuid4()->toString();
+        }
+
+        $this->client->createSession($this->id, $sessionId);
+
+        return new Session($sessionId, $this->id, $this->client);
+    }
+
+    /**
+     * Get an existing session by ID.
+     *
+     * @param  string  $sessionId  The session ID
+     * @return Session The session instance
+     *
+     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the session doesn't exist
+     */
+    public function getSession(string $sessionId): Session
+    {
+        // Verify session exists
+        $this->client->getSession($this->id, $sessionId);
+
+        return new Session($sessionId, $this->id, $this->client);
+    }
+
+    /**
+     * List all active sessions.
+     *
+     * @return Session[] Array of session instances
+     *
+     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the API request fails
+     */
+    public function listSessions(): array
+    {
+        $sessionResponses = $this->client->listSessions($this->id);
+
+        return array_map(
+            fn ($response) => new Session($response->id, $this->id, $this->client),
+            $sessionResponses
+        );
+    }
+
+    /**
+     * Execute a command asynchronously in a temporary session.
+     *
+     * This is a convenience method that creates a session, executes the command
+     * asynchronously, and returns a SessionCommand for tracking.
+     *
+     * @param  string  $command  The command to execute
+     * @param  string|null  $cwd  Working directory
+     * @param  array|null  $env  Environment variables
+     * @return SessionCommand The command instance for tracking
+     *
+     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the API request fails
+     *
+     * @example
+     * $command = $sandbox->execAsync('npm run build');
+     * $status = $command->waitForCompletion();
+     * echo "Build " . ($status->exitCode === 0 ? "succeeded" : "failed");
+     */
+    public function execAsync(string $command, ?string $cwd = null, ?array $env = null): SessionCommand
+    {
+        $sessionId = 'async-exec-' . time() . '-' . substr(md5($command), 0, 8);
+        $session = $this->createSession($sessionId);
+
+        return $session->executeCommand($command, true, $cwd, $env);
     }
 }
