@@ -11,4 +11,4 @@ composer.lock
 .env.testing
 coverage
 .phpunit.cache
-.pest
+.pesttmp/

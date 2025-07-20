@@ -18,6 +18,10 @@ use ElliottLawson\Daytona\DTOs\SandboxFilter;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\DTOs\SearchMatch;
+use ElliottLawson\Daytona\DTOs\SessionCommandStatus;
+use ElliottLawson\Daytona\DTOs\SessionExecuteRequest;
+use ElliottLawson\Daytona\DTOs\SessionExecuteResponse;
+use ElliottLawson\Daytona\DTOs\SessionResponse;
 use ElliottLawson\Daytona\Exceptions\ApiException;
 use ElliottLawson\Daytona\Exceptions\CommandExecutionException;
 use ElliottLawson\Daytona\Exceptions\ConfigurationException;
@@ -1116,6 +1120,437 @@ class DaytonaClient
                 'error' => $e->getMessage(),
             ]);
             throw ApiException::requestFailed('get preview URL', $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Create a new session in the sandbox.
+     *
+     * @param  string  $sandboxId  The sandbox ID
+     * @param  string  $sessionId  The session ID to create
+     * @return SessionResponse The created session
+     *
+     * @throws ApiException If the API request fails
+     */
+    public function createSession(string $sandboxId, string $sessionId): SessionResponse
+    {
+        try {
+            Log::info('Creating session in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+            ]);
+
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/process/session", [
+                'SessionId' => $sessionId,
+            ]);
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'create session');
+            }
+
+            $data = $response->json();
+            Log::info('Session created successfully', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'response_data' => $data,
+            ]);
+
+            // If the API returns empty/null, create a minimal response
+            if (empty($data)) {
+                $data = [
+                    'id' => $sessionId,
+                    'sandboxId' => $sandboxId,
+                ];
+            }
+
+            return SessionResponse::fromArray($data);
+        } catch (RequestException $e) {
+            Log::error('Failed to create session in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::requestFailed('create session', $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Get session details.
+     *
+     * @param  string  $sandboxId  The sandbox ID
+     * @param  string  $sessionId  The session ID
+     * @return SessionResponse The session details
+     *
+     * @throws ApiException If the API request fails
+     */
+    public function getSession(string $sandboxId, string $sessionId): SessionResponse
+    {
+        try {
+            Log::debug('Getting session details from Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+            ]);
+
+            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}");
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'get session');
+            }
+
+            $data = $response->json();
+
+            // Handle different response formats
+            if (! empty($data)) {
+                // Map sessionId to id if needed
+                if (! isset($data['id']) && isset($data['sessionId'])) {
+                    $data['id'] = $data['sessionId'];
+                }
+            } else {
+                // If API doesn't return full session data, create minimal response
+                $data = [
+                    'id' => $sessionId,
+                    'sandboxId' => $sandboxId,
+                ];
+            }
+
+            return SessionResponse::fromArray($data);
+        } catch (RequestException $e) {
+            Log::error('Failed to get session from Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::requestFailed('get session', $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Execute a command in a session.
+     *
+     * @param  string  $sandboxId  The sandbox ID
+     * @param  string  $sessionId  The session ID
+     * @param  SessionExecuteRequest  $request  The command execution request
+     * @return SessionExecuteResponse The command execution response
+     *
+     * @throws ApiException If the API request fails
+     */
+    public function executeSessionCommand(string $sandboxId, string $sessionId, SessionExecuteRequest $request): SessionExecuteResponse
+    {
+        try {
+            Log::info('Executing command in session', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'command' => $request->command,
+                'runAsync' => $request->runAsync,
+            ]);
+
+            // Prepare the command
+            $command = $request->command;
+
+            // Handle working directory by prepending cd command
+            if ($request->cwd !== null) {
+                $command = "cd {$request->cwd} && {$command}";
+            }
+
+            // Handle environment variables
+            if (! empty($request->env)) {
+                $safeEnvExports = [];
+                foreach ($request->env as $key => $value) {
+                    $encodedValue = base64_encode($value);
+                    $safeEnvExports[] = "export {$key}=\$(echo '{$encodedValue}' | base64 -d)";
+                }
+                if (! empty($safeEnvExports)) {
+                    $envString = implode(';', $safeEnvExports).';';
+                    $command = $envString.' '.$command;
+                }
+            }
+
+            // No need to wrap in sh -c for sessions - they maintain state
+
+            $payload = [
+                'command' => $command,
+                'runAsync' => $request->runAsync,
+            ];
+
+            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/exec", $payload);
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'execute session command');
+            }
+
+            $data = $response->json();
+
+            // Handle different response formats
+            if ($response->status() === 202) {
+                // Async command accepted
+                Log::info('Session command accepted for async execution', [
+                    'sandboxId' => $sandboxId,
+                    'sessionId' => $sessionId,
+                    'cmdId' => $data['cmdId'] ?? null,
+                ]);
+            } else {
+                // Sync command completed
+                Log::info('Session command executed successfully', [
+                    'sandboxId' => $sandboxId,
+                    'sessionId' => $sessionId,
+                    'output' => $data['output'] ?? $data,
+                ]);
+
+                // If response is just a string, treat it as output
+                if (is_string($data)) {
+                    $data = ['output' => $data, 'exitCode' => 0];
+                }
+            }
+
+            return SessionExecuteResponse::fromArray($data);
+        } catch (RequestException $e) {
+            Log::error('Failed to execute command in session', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::requestFailed('execute session command', $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Get the status of a command executed in a session.
+     *
+     * @param  string  $sandboxId  The sandbox ID
+     * @param  string  $sessionId  The session ID
+     * @param  string  $commandId  The command ID
+     * @return SessionCommandStatus The command status
+     *
+     * @throws ApiException If the API request fails
+     */
+    public function getSessionCommand(string $sandboxId, string $sessionId, string $commandId): SessionCommandStatus
+    {
+        try {
+            Log::debug('Getting session command status', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'commandId' => $commandId,
+            ]);
+
+            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/command/{$commandId}");
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'get session command');
+            }
+
+            return SessionCommandStatus::fromArray($response->json());
+        } catch (RequestException $e) {
+            Log::error('Failed to get session command status', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'commandId' => $commandId,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::requestFailed('get session command', $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Get logs for a command executed in a session.
+     *
+     * @param  string  $sandboxId  The sandbox ID
+     * @param  string  $sessionId  The session ID
+     * @param  string  $commandId  The command ID
+     * @param  callable|null  $callback  Optional callback for streaming logs
+     * @return string|void Full logs if no callback provided, void if streaming
+     *
+     * @throws ApiException If the API request fails
+     */
+    public function getSessionCommandLogs(string $sandboxId, string $sessionId, string $commandId, ?callable $callback = null)
+    {
+        try {
+            Log::debug('Getting session command logs', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'commandId' => $commandId,
+                'streaming' => $callback !== null,
+            ]);
+
+            if ($callback === null) {
+                // Return full logs
+                $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/command/{$commandId}/logs");
+
+                if (! $response->successful()) {
+                    throw ApiException::fromResponse($response, 'get session command logs');
+                }
+
+                return $response->body();
+            }
+
+            // Stream logs with callback - handle chunked transfer encoding
+            $httpClient = Http::withToken($this->config->apiKey)
+                ->baseUrl($this->config->apiUrl)
+                ->timeout(0) // No timeout for streaming
+                ->withOptions([
+                    'stream' => true,
+                    'sink' => null,
+                ]);
+
+            if ($this->config->organizationId) {
+                $httpClient->withHeaders([
+                    'X-Daytona-Organization-ID' => $this->config->organizationId,
+                ]);
+            }
+
+            $response = $httpClient->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/command/{$commandId}/logs");
+
+            if ($response->status() >= 400) {
+                throw ApiException::fromResponse($response, 'get session command logs');
+            }
+
+            $body = $response->getBody();
+            $exitCodeSeenCount = 0;
+            $buffer = '';
+
+            while (! $body->eof() || $buffer !== '') {
+                // Read chunk
+                $chunk = $body->read(8192);
+                $buffer .= $chunk;
+
+                // Process complete chunks
+                if (str_contains($buffer, "\n")) {
+                    $lines = explode("\n", $buffer);
+                    // Keep the last incomplete line in buffer
+                    $buffer = array_pop($lines);
+
+                    foreach ($lines as $line) {
+                        if ($line !== '') {
+                            $callback($line."\n");
+                        }
+                    }
+                } elseif ($chunk === '' && $buffer !== '') {
+                    // Process remaining buffer when stream ends
+                    $callback($buffer);
+                    $buffer = '';
+                }
+
+                // Check command status periodically (similar to TypeScript SDK)
+                if ($chunk === '') {
+                    // Small delay to avoid busy waiting
+                    usleep(100000); // 100ms
+
+                    // Check if command has completed
+                    try {
+                        $status = $this->getSessionCommand($sandboxId, $sessionId, $commandId);
+                        if ($status->exitCode !== null && $status->exitCode !== -1) {
+                            $exitCodeSeenCount++;
+                            // After seeing finished status twice in a row, break
+                            if ($exitCodeSeenCount > 1) {
+                                break;
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        // Continue streaming even if status check fails
+                    }
+                } else {
+                    $exitCodeSeenCount = 0; // Reset counter when we get data
+                }
+            }
+
+            // Process any remaining buffer
+            if ($buffer !== '') {
+                $callback($buffer);
+            }
+        } catch (RequestException $e) {
+            Log::error('Failed to get session command logs', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'commandId' => $commandId,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::requestFailed('get session command logs', $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * List all sessions in a sandbox.
+     *
+     * @param  string  $sandboxId  The sandbox ID
+     * @return SessionResponse[] Array of sessions
+     *
+     * @throws ApiException If the API request fails
+     */
+    public function listSessions(string $sandboxId): array
+    {
+        try {
+            Log::debug('Listing sessions in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+            ]);
+
+            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session");
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'list sessions');
+            }
+
+            $sessions = $response->json();
+
+            // Handle empty or non-array response
+            if (! is_array($sessions)) {
+                return [];
+            }
+
+            $result = array_map(function (array $session) {
+                // Map sessionId to id for consistency
+                if (! isset($session['id']) && isset($session['sessionId'])) {
+                    $session['id'] = $session['sessionId'];
+                } elseif (! isset($session['id'])) {
+                    // Skip invalid session data
+                    return null;
+                }
+
+                return SessionResponse::fromArray($session);
+            }, $sessions);
+
+            // Filter out null values
+            return array_values(array_filter($result));
+        } catch (RequestException $e) {
+            Log::error('Failed to list sessions in Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::requestFailed('list sessions', $e->getMessage(), $e);
+        }
+    }
+
+    /**
+     * Delete a session from the sandbox.
+     *
+     * @param  string  $sandboxId  The sandbox ID
+     * @param  string  $sessionId  The session ID to delete
+     *
+     * @throws ApiException If the API request fails
+     */
+    public function deleteSession(string $sandboxId, string $sessionId): void
+    {
+        try {
+            Log::info('Deleting session from Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+            ]);
+
+            $response = $this->client()->delete("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}");
+
+            if (! $response->successful()) {
+                throw ApiException::fromResponse($response, 'delete session');
+            }
+
+            Log::info('Session deleted successfully', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+            ]);
+        } catch (RequestException $e) {
+            Log::error('Failed to delete session from Daytona sandbox', [
+                'sandboxId' => $sandboxId,
+                'sessionId' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+            throw ApiException::requestFailed('delete session', $e->getMessage(), $e);
         }
     }
 }

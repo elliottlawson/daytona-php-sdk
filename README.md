@@ -281,6 +281,44 @@ $result = $sandbox->exec('composer install', '/app', $env, $timeout);
 $result = $client->executeCommand($sandboxId, 'npm test', '/workspace', $env, $timeout);
 ```
 
+### Session Management for Long-Running Commands
+
+The SDK provides session support for managing long-running processes like development servers, build watchers, and background tasks.
+
+```php
+// Create a session for long-running commands
+$session = $sandbox->createSession('dev-server');
+
+// Start a development server asynchronously
+$serverCommand = $session->executeCommand(
+    'npm run dev',
+    runAsync: true,
+    cwd: '/workspace/app'
+);
+
+// Get preview URL while server is running
+$preview = $sandbox->getPreviewLink(3000);
+echo "Access your app at: {$preview->url}\n";
+
+// Stream server logs in real-time
+$serverCommand->streamLogs(function($chunk) {
+    echo $chunk;
+    flush();
+});
+
+// Or use the convenience method for quick async execution
+$buildCommand = $sandbox->execAsync('npm run build');
+$status = $buildCommand->waitForCompletion(timeout: 300);
+if ($status->exitCode === 0) {
+    echo "Build successful!\n";
+}
+
+// Clean up when done
+$session->delete();
+```
+
+For more details on session management, see [Session Management Documentation](docs/SESSIONS.md).
+
 ### Git Operations
 
 #### Using the Sandbox Object (Recommended)
