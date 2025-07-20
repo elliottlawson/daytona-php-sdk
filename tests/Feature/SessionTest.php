@@ -22,7 +22,7 @@ beforeEach(function () {
 
 it('can create a session', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session' => Http::response([
+        '*/toolbox/*/toolbox/process/session' => Http::response([
             'id' => $this->sessionId,
             'createdAt' => now()->toIso8601String(),
             'commands' => [],
@@ -39,7 +39,7 @@ it('can create a session', function () {
 
 it('can get session details', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*' => Http::response([
+        '*/toolbox/*/toolbox/process/session/*' => Http::response([
             'id' => $this->sessionId,
             'createdAt' => now()->toIso8601String(),
             'commands' => [
@@ -64,7 +64,7 @@ it('can get session details', function () {
 
 it('can execute a synchronous command', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command' => Http::response([
+        '*/toolbox/*/toolbox/process/session/*/exec' => Http::response([
             'cmdId' => 'cmd-123',
             'output' => 'Hello, World!',
             'exitCode' => 0,
@@ -86,7 +86,7 @@ it('can execute a synchronous command', function () {
 
 it('can execute an asynchronous command', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command' => Http::response([
+        '*/toolbox/*/toolbox/process/session/*/exec' => Http::response([
             'cmdId' => 'cmd-456',
             'output' => null,
             'exitCode' => null,
@@ -108,7 +108,7 @@ it('can execute an asynchronous command', function () {
 
 it('can execute command with working directory', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command' => Http::response([
+        '*/toolbox/*/toolbox/process/session/*/exec' => Http::response([
             'cmdId' => 'cmd-789',
             'output' => '/home/user/test',
             'exitCode' => 0,
@@ -129,7 +129,7 @@ it('can execute command with working directory', function () {
 
 it('can execute command with environment variables', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command' => Http::response([
+        '*/toolbox/*/toolbox/process/session/*/exec' => Http::response([
             'cmdId' => 'cmd-env',
             'output' => 'BAR',
             'exitCode' => 0,
@@ -150,7 +150,7 @@ it('can execute command with environment variables', function () {
 
 it('can get command status', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command/*' => Http::response([
+        '*/toolbox/*/toolbox/process/session/*/command/*' => Http::response([
             'id' => 'cmd-123',
             'command' => 'echo "Hello"',
             'exitCode' => 0,
@@ -169,7 +169,7 @@ it('can get command logs without callback', function () {
     $logContent = "Line 1\nLine 2\nLine 3";
 
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command/*/logs' => Http::response($logContent, 200),
+        '*/toolbox/*/toolbox/process/session/*/command/*/logs' => Http::response($logContent, 200),
     ]);
 
     $logs = $this->client->getSessionCommandLogs($this->sandboxId, $this->sessionId, 'cmd-123');
@@ -185,7 +185,7 @@ it('can stream command logs with callback', function () {
 
     // Mock streaming response
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command/*/logs' => Http::response(
+        '*/toolbox/*/toolbox/process/session/*/command/*/logs' => Http::response(
             "Line 1\nLine 2\nLine 3\n",
             200,
             ['Transfer-Encoding' => 'chunked']
@@ -205,7 +205,7 @@ it('can stream command logs with callback', function () {
 
 it('can list all sessions', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session' => Http::response([
+        '*/toolbox/*/toolbox/process/session' => Http::response([
             [
                 'id' => 'session-1',
                 'createdAt' => now()->toIso8601String(),
@@ -233,20 +233,20 @@ it('can list all sessions', function () {
 
 it('can delete a session', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*' => Http::response([], 204),
+        '*/toolbox/*/toolbox/process/session/*' => Http::response([], 204),
     ]);
 
     $this->client->deleteSession($this->sandboxId, $this->sessionId);
 
     Http::assertSent(function ($request) {
         return $request->method() === 'DELETE' &&
-               str_contains($request->url(), "session/{$this->sessionId}");
+               str_contains($request->url(), "process/session/{$this->sessionId}");
     });
 });
 
 it('handles session creation errors', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session' => Http::response(['error' => 'Session already exists'], 409),
+        '*/toolbox/*/toolbox/process/session' => Http::response(['error' => 'Session already exists'], 409),
     ]);
 
     $this->client->createSession($this->sandboxId, $this->sessionId);
@@ -254,7 +254,7 @@ it('handles session creation errors', function () {
 
 it('handles command execution errors', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command' => Http::response(['error' => 'Command failed'], 500),
+        '*/toolbox/*/toolbox/process/session/*/exec' => Http::response(['error' => 'Command failed'], 500),
     ]);
 
     $request = new SessionExecuteRequest(
@@ -267,7 +267,7 @@ it('handles command execution errors', function () {
 
 it('preserves -1 exit code for unknown command status', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command/*' => Http::response([
+        '*/toolbox/*/toolbox/process/session/*/command/*' => Http::response([
             'id' => 'cmd-unknown',
             'command' => 'some-command',
             'exitCode' => -1,
@@ -281,11 +281,10 @@ it('preserves -1 exit code for unknown command status', function () {
 
 it('correctly encodes command for synchronous execution', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command' => function ($request) {
+        '*/toolbox/*/toolbox/process/session/*/exec' => function ($request) {
             $body = $request->data();
-            // Verify the command is properly wrapped
-            expect($body['command'])->toContain('sh -c');
-            expect($body['command'])->toContain('base64');
+            // Verify the command is sent as-is (no wrapping for sessions)
+            expect($body['command'])->toBe('echo "test"');
             expect($body['runAsync'])->toBe(false);
 
             return Http::response([
@@ -307,7 +306,7 @@ it('correctly encodes command for synchronous execution', function () {
 
 it('handles environment variables in command execution', function () {
     Http::fake([
-        '*/toolbox/*/toolbox/session/*/command' => function ($request) {
+        '*/toolbox/*/toolbox/process/session/*/exec' => function ($request) {
             $body = $request->data();
             // Verify environment variables are properly encoded
             expect($body['command'])->toContain('export');
