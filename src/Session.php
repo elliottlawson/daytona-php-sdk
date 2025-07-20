@@ -33,8 +33,9 @@ class Session
     ): SessionCommand {
         $request = new SessionExecuteRequest(
             command: $command,
-            cwd: $cwd,
-            env: $env
+            runAsync: $runAsync,
+            env: $env ?? [],
+            cwd: $cwd
         );
 
         $response = $this->client->executeSessionCommand($this->sandboxId, $this->id, $request);
