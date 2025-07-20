@@ -4,7 +4,6 @@ namespace ElliottLawson\Daytona;
 
 use ElliottLawson\Daytona\DTOs\SessionCommandStatus;
 use ElliottLawson\Daytona\DTOs\SessionExecuteRequest;
-use ElliottLawson\Daytona\DTOs\SessionExecuteResponse;
 use ElliottLawson\Daytona\Exceptions\ApiException;
 
 class Session
@@ -18,10 +17,10 @@ class Session
     /**
      * Execute a command in this session.
      *
-     * @param string $command The command to execute
-     * @param bool $runAsync Whether to run the command asynchronously
-     * @param string|null $cwd The working directory for the command
-     * @param array|null $env Environment variables for the command
+     * @param  string  $command  The command to execute
+     * @param  bool  $runAsync  Whether to run the command asynchronously
+     * @param  string|null  $cwd  The working directory for the command
+     * @param  array|null  $env  Environment variables for the command
      * @return SessionCommand The command object for tracking execution
      *
      * @throws ApiException If the API request fails
@@ -51,7 +50,7 @@ class Session
     /**
      * Get the status of a command executed in this session.
      *
-     * @param string $commandId The command ID to check status for
+     * @param  string  $commandId  The command ID to check status for
      * @return SessionCommandStatus The command status
      *
      * @throws ApiException If the API request fails
@@ -64,9 +63,8 @@ class Session
     /**
      * Stream logs for a command executed in this session.
      *
-     * @param string $commandId The command ID to stream logs for
-     * @param callable $callback Callback function to receive log chunks
-     * @return void
+     * @param  string  $commandId  The command ID to stream logs for
+     * @param  callable  $callback  Callback function to receive log chunks
      *
      * @throws ApiException If the API request fails
      */
@@ -78,7 +76,7 @@ class Session
     /**
      * Get the full logs for a command executed in this session.
      *
-     * @param string $commandId The command ID to get logs for
+     * @param  string  $commandId  The command ID to get logs for
      * @return string The complete logs
      *
      * @throws ApiException If the API request fails
@@ -91,7 +89,6 @@ class Session
     /**
      * Delete this session.
      *
-     * @return void
      *
      * @throws ApiException If the API request fails
      */

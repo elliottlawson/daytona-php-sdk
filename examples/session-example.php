@@ -1,10 +1,10 @@
 <?php
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__.'/../vendor/autoload.php';
 
+use ElliottLawson\Daytona\DaytonaClient;
 use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\DTOs\SessionExecuteRequest;
-use ElliottLawson\Daytona\DaytonaClient;
 
 // Configuration
 $config = new Config(
@@ -21,7 +21,7 @@ try {
     echo "=== Session Example ===\n\n";
 
     // 1. Create a new session
-    $sessionId = 'test-session-' . time();
+    $sessionId = 'test-session-'.time();
     echo "Creating session: {$sessionId}\n";
     $session = $client->createSession($sandboxId, $sessionId);
     echo "Session created successfully\n";
@@ -50,7 +50,7 @@ try {
     // 4. Get session details
     echo "Getting session details\n";
     $sessionDetails = $client->getSession($sandboxId, $sessionId);
-    echo "Session has " . count($sessionDetails->commands) . " commands\n";
+    echo 'Session has '.count($sessionDetails->commands)." commands\n";
     foreach ($sessionDetails->commands as $cmd) {
         echo "  - Command: {$cmd->command}, Exit Code: {$cmd->exitCode}\n";
     }
@@ -95,9 +95,9 @@ try {
     // 9. List all sessions
     echo "Listing all sessions\n";
     $sessions = $client->listSessions($sandboxId);
-    echo "Found " . count($sessions) . " sessions\n";
+    echo 'Found '.count($sessions)." sessions\n";
     foreach ($sessions as $s) {
-        echo "  - Session ID: {$s->id}, Commands: " . count($s->commands) . "\n";
+        echo "  - Session ID: {$s->id}, Commands: ".count($s->commands)."\n";
     }
     echo "\n";
 
@@ -107,6 +107,6 @@ try {
     echo "Session deleted successfully\n";
 
 } catch (\Exception $e) {
-    echo "Error: " . $e->getMessage() . "\n";
-    echo "Trace: " . $e->getTraceAsString() . "\n";
+    echo 'Error: '.$e->getMessage()."\n";
+    echo 'Trace: '.$e->getTraceAsString()."\n";
 }

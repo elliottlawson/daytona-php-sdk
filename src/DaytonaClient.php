@@ -1192,17 +1192,17 @@ class DaytonaClient
             ]);
 
             $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}");
-            
+
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'get session');
             }
 
             $data = $response->json();
-            
+
             // Handle different response formats
-            if (!empty($data)) {
+            if (! empty($data)) {
                 // Map sessionId to id if needed
-                if (!isset($data['id']) && isset($data['sessionId'])) {
+                if (! isset($data['id']) && isset($data['sessionId'])) {
                     $data['id'] = $data['sessionId'];
                 }
             } else {
@@ -1246,7 +1246,7 @@ class DaytonaClient
 
             // Prepare the command
             $command = $request->command;
-            
+
             // Handle working directory by prepending cd command
             if ($request->cwd !== null) {
                 $command = "cd {$request->cwd} && {$command}";
@@ -1260,8 +1260,8 @@ class DaytonaClient
                     $safeEnvExports[] = "export {$key}=\$(echo '{$encodedValue}' | base64 -d)";
                 }
                 if (! empty($safeEnvExports)) {
-                    $envString = implode(';', $safeEnvExports) . ';';
-                    $command = $envString . ' ' . $command;
+                    $envString = implode(';', $safeEnvExports).';';
+                    $command = $envString.' '.$command;
                 }
             }
 
@@ -1279,7 +1279,7 @@ class DaytonaClient
             }
 
             $data = $response->json();
-            
+
             // Handle different response formats
             if ($response->status() === 202) {
                 // Async command accepted
@@ -1295,7 +1295,7 @@ class DaytonaClient
                     'sessionId' => $sessionId,
                     'output' => $data['output'] ?? $data,
                 ]);
-                
+
                 // If response is just a string, treat it as output
                 if (is_string($data)) {
                     $data = ['output' => $data, 'exitCode' => 0];
@@ -1390,13 +1390,13 @@ class DaytonaClient
                     'stream' => true,
                     'sink' => null,
                 ]);
-            
+
             if ($this->config->organizationId) {
                 $httpClient->withHeaders([
                     'X-Daytona-Organization-ID' => $this->config->organizationId,
                 ]);
             }
-            
+
             $response = $httpClient->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/command/{$commandId}/logs");
 
             if ($response->status() >= 400) {
@@ -1417,10 +1417,10 @@ class DaytonaClient
                     $lines = explode("\n", $buffer);
                     // Keep the last incomplete line in buffer
                     $buffer = array_pop($lines);
-                    
+
                     foreach ($lines as $line) {
                         if ($line !== '') {
-                            $callback($line . "\n");
+                            $callback($line."\n");
                         }
                     }
                 } elseif ($chunk === '' && $buffer !== '') {
@@ -1433,7 +1433,7 @@ class DaytonaClient
                 if ($chunk === '') {
                     // Small delay to avoid busy waiting
                     usleep(100000); // 100ms
-                    
+
                     // Check if command has completed
                     try {
                         $status = $this->getSessionCommand($sandboxId, $sessionId, $commandId);
@@ -1483,29 +1483,30 @@ class DaytonaClient
             ]);
 
             $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session");
-            
+
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'list sessions');
             }
 
             $sessions = $response->json();
-            
+
             // Handle empty or non-array response
-            if (!is_array($sessions)) {
+            if (! is_array($sessions)) {
                 return [];
             }
 
             $result = array_map(function (array $session) {
                 // Map sessionId to id for consistency
-                if (!isset($session['id']) && isset($session['sessionId'])) {
+                if (! isset($session['id']) && isset($session['sessionId'])) {
                     $session['id'] = $session['sessionId'];
-                } elseif (!isset($session['id'])) {
+                } elseif (! isset($session['id'])) {
                     // Skip invalid session data
                     return null;
                 }
+
                 return SessionResponse::fromArray($session);
             }, $sessions);
-            
+
             // Filter out null values
             return array_values(array_filter($result));
         } catch (RequestException $e) {
@@ -1522,7 +1523,6 @@ class DaytonaClient
      *
      * @param  string  $sandboxId  The sandbox ID
      * @param  string  $sessionId  The session ID to delete
-     * @return void
      *
      * @throws ApiException If the API request fails
      */

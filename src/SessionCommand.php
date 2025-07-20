@@ -40,8 +40,7 @@ class SessionCommand
     /**
      * Stream logs for this command.
      *
-     * @param callable $callback Callback function to receive log chunks
-     * @return void
+     * @param  callable  $callback  Callback function to receive log chunks
      *
      * @throws ApiException If the API request fails
      */
@@ -65,7 +64,7 @@ class SessionCommand
     /**
      * Wait for the command to complete.
      *
-     * @param int $timeout Maximum time to wait in seconds (default: 300)
+     * @param  int  $timeout  Maximum time to wait in seconds (default: 300)
      * @return SessionCommandStatus The final command status
      *
      * @throws CommandExecutionException If the command times out
@@ -92,7 +91,7 @@ class SessionCommand
             }
 
             // Sleep before next poll
-            usleep((int)($pollInterval * 1000000));
+            usleep((int) ($pollInterval * 1000000));
         }
     }
 }

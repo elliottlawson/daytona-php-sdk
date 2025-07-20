@@ -2,10 +2,10 @@
 
 use ElliottLawson\Daytona\DaytonaClient;
 use ElliottLawson\Daytona\DTOs\Config;
+use ElliottLawson\Daytona\DTOs\SessionCommandStatus;
 use ElliottLawson\Daytona\DTOs\SessionExecuteRequest;
 use ElliottLawson\Daytona\DTOs\SessionExecuteResponse;
 use ElliottLawson\Daytona\DTOs\SessionResponse;
-use ElliottLawson\Daytona\DTOs\SessionCommandStatus;
 use ElliottLawson\Daytona\Exceptions\ApiException;
 use Illuminate\Support\Facades\Http;
 
@@ -17,7 +17,7 @@ beforeEach(function () {
     );
     $this->client = new DaytonaClient($this->config);
     $this->sandboxId = 'test-sandbox-id';
-    $this->sessionId = 'test-session-' . time();
+    $this->sessionId = 'test-session-'.time();
 });
 
 it('can create a session', function () {
@@ -167,7 +167,7 @@ it('can get command status', function () {
 
 it('can get command logs without callback', function () {
     $logContent = "Line 1\nLine 2\nLine 3";
-    
+
     Http::fake([
         '*/toolbox/*/toolbox/session/*/command/*/logs' => Http::response($logContent, 200),
     ]);
@@ -287,7 +287,7 @@ it('correctly encodes command for synchronous execution', function () {
             expect($body['command'])->toContain('sh -c');
             expect($body['command'])->toContain('base64');
             expect($body['runAsync'])->toBe(false);
-            
+
             return Http::response([
                 'cmdId' => 'cmd-encoded',
                 'output' => 'test output',
@@ -312,7 +312,7 @@ it('handles environment variables in command execution', function () {
             // Verify environment variables are properly encoded
             expect($body['command'])->toContain('export');
             expect($body['command'])->toContain('base64');
-            
+
             return Http::response([
                 'cmdId' => 'cmd-with-env',
                 'output' => 'value1',

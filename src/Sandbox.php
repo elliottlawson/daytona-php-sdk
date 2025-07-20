@@ -10,10 +10,6 @@ use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\DTOs\SearchMatch;
-use ElliottLawson\Daytona\DTOs\SessionCommandStatus;
-use ElliottLawson\Daytona\DTOs\SessionExecuteRequest;
-use ElliottLawson\Daytona\DTOs\SessionExecuteResponse;
-use ElliottLawson\Daytona\DTOs\SessionResponse;
 
 class Sandbox
 {
@@ -427,7 +423,7 @@ class Sandbox
      */
     public function execAsync(string $command, ?string $cwd = null, ?array $env = null): SessionCommand
     {
-        $sessionId = 'async-exec-' . time() . '-' . substr(md5($command), 0, 8);
+        $sessionId = 'async-exec-'.time().'-'.substr(md5($command), 0, 8);
         $session = $this->createSession($sessionId);
 
         return $session->executeCommand($command, true, $cwd, $env);

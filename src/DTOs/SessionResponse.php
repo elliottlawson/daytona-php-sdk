@@ -2,8 +2,6 @@
 
 namespace ElliottLawson\Daytona\DTOs;
 
-use ElliottLawson\Daytona\DTOs\SessionCommandStatus;
-
 class SessionResponse
 {
     public function __construct(
@@ -39,6 +37,6 @@ class SessionResponse
                 fn (SessionCommandStatus $command) => $command->toArray(),
                 $this->commands
             ),
-        ], fn($value) => $value !== null);
+        ], fn ($value) => $value !== null);
     }
 }
