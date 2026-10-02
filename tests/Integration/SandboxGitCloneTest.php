@@ -70,7 +70,7 @@ it('handles clone errors gracefully', function () {
             branch: 'main',
         );
         fail('Clone should have failed');
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         expect($e->getMessage())->toContain('clone');
     }
 });
@@ -90,7 +90,7 @@ it('can clone with authentication parameters', function () {
             username: 'testuser',
             password: 'testpass'
         );
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Expected to fail - just testing parameter acceptance
         expect($e->getMessage())->toContain('clone');
     }

@@ -5,6 +5,7 @@ use ElliottLawson\Daytona\DTOs\Config;
 use ElliottLawson\Daytona\Exceptions\ApiException;
 use ElliottLawson\Daytona\Exceptions\DaytonaException;
 use ElliottLawson\Daytona\Exceptions\SandboxException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -172,7 +173,7 @@ describe('Centralized Error Handling', function () {
     describe('Timeout Error Handling', function () {
         it('handles connection timeout errors', function () {
             Http::fake(function () {
-                throw new \Illuminate\Http\Client\ConnectionException('Connection timeout');
+                throw new ConnectionException('Connection timeout');
             });
 
             $this->client->listSandboxes();
@@ -182,7 +183,7 @@ describe('Centralized Error Handling', function () {
             // Mock a scenario where timeout is detected in the error handler
             Http::fake([
                 '*/sandbox' => function () {
-                    throw new \Exception('timeout of 30000ms exceeded');
+                    throw new Exception('timeout of 30000ms exceeded');
                 },
             ]);
 

@@ -75,7 +75,7 @@ it('can attempt push without credentials', function () {
         );
         // If it succeeds, repo allows anonymous pushes
         expect(true)->toBeTrue();
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Expected to fail
         expect($e->getMessage())->toMatch('/push|authentication|credentials|permission/i');
     }
@@ -110,7 +110,7 @@ it('can push with branch specification', function () {
             repoPath: $this->repoPath,
             branch: $branchName
         );
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         expect($e->getMessage())->toMatch('/push|authentication|credentials|permission/i');
     }
 });
@@ -145,7 +145,7 @@ it('can push with remote specification', function () {
             remote: 'origin',
             branch: $branchName
         );
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         expect($e->getMessage())->toMatch('/push|authentication|credentials|permission/i');
     }
 });
@@ -182,7 +182,7 @@ it('accepts authentication parameters for push', function () {
             username: 'testuser',
             password: 'testpass'
         );
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Expected to fail with invalid credentials
         expect($e->getMessage())->toMatch('/push|authentication|credentials|permission/i');
     }
@@ -218,7 +218,7 @@ it('accepts force push parameter', function () {
             branch: $branchName,
             force: true
         );
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         expect($e->getMessage())->toMatch('/push|authentication|credentials|permission/i');
     }
 });
@@ -261,7 +261,7 @@ it('accepts push all branches parameter', function () {
             repoPath: $this->repoPath,
             all: true
         );
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         expect($e->getMessage())->toMatch('/push|authentication|credentials|permission/i');
     }
 });

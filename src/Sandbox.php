@@ -6,10 +6,14 @@ use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\DirectoryListingResponse;
 use ElliottLawson\Daytona\DTOs\FileInfo;
 use ElliottLawson\Daytona\DTOs\FilePermissionsParams;
+use ElliottLawson\Daytona\DTOs\GitStatusResponse;
+use ElliottLawson\Daytona\DTOs\PortPreviewUrl;
 use ElliottLawson\Daytona\DTOs\ReplaceResult;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
 use ElliottLawson\Daytona\DTOs\SearchFilesResponse;
 use ElliottLawson\Daytona\DTOs\SearchMatch;
+use ElliottLawson\Daytona\Exceptions\ApiException;
+use Ramsey\Uuid\Uuid;
 
 class Sandbox
 {
@@ -208,7 +212,7 @@ class Sandbox
         return $this;
     }
 
-    public function gitStatus(string $repoPath = '/workspace'): \ElliottLawson\Daytona\DTOs\GitStatusResponse
+    public function gitStatus(string $repoPath = '/workspace'): GitStatusResponse
     {
         return $this->client->gitStatus($this->id, $repoPath);
     }
@@ -328,16 +332,16 @@ class Sandbox
      * The preview URL allows external access to services running in the sandbox.
      *
      * @param  int  $port  The port number to get preview URL for
-     * @return \ElliottLawson\Daytona\DTOs\PortPreviewUrl The preview URL information
+     * @return PortPreviewUrl The preview URL information
      *
-     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the API request fails
+     * @throws ApiException If the API request fails
      *
      * @example
      * $previewInfo = $sandbox->getPreviewLink(3000);
      * echo "Preview URL: " . $previewInfo->url;
      * echo "Access Token: " . $previewInfo->token;
      */
-    public function getPreviewLink(int $port): \ElliottLawson\Daytona\DTOs\PortPreviewUrl
+    public function getPreviewLink(int $port): PortPreviewUrl
     {
         return $this->client->getPortPreviewUrl($this->id, $port);
     }
@@ -350,7 +354,7 @@ class Sandbox
      * @param  string|null  $sessionId  Optional session ID. If not provided, a UUID will be generated.
      * @return Session The created session instance
      *
-     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the API request fails
+     * @throws ApiException If the API request fails
      *
      * @example
      * $session = $sandbox->createSession();
@@ -362,7 +366,7 @@ class Sandbox
     public function createSession(?string $sessionId = null): Session
     {
         if ($sessionId === null) {
-            $sessionId = \Ramsey\Uuid\Uuid::uuid4()->toString();
+            $sessionId = Uuid::uuid4()->toString();
         }
 
         $this->client->createSession($this->id, $sessionId);
@@ -376,7 +380,7 @@ class Sandbox
      * @param  string  $sessionId  The session ID
      * @return Session The session instance
      *
-     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the session doesn't exist
+     * @throws ApiException If the session doesn't exist
      */
     public function getSession(string $sessionId): Session
     {
@@ -391,7 +395,7 @@ class Sandbox
      *
      * @return Session[] Array of session instances
      *
-     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the API request fails
+     * @throws ApiException If the API request fails
      */
     public function listSessions(): array
     {
@@ -414,7 +418,7 @@ class Sandbox
      * @param  array|null  $env  Environment variables
      * @return SessionCommand The command instance for tracking
      *
-     * @throws \ElliottLawson\Daytona\Exceptions\ApiException If the API request fails
+     * @throws ApiException If the API request fails
      *
      * @example
      * $command = $sandbox->execAsync('npm run build');

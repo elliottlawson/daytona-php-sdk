@@ -2,6 +2,7 @@
 
 namespace ElliottLawson\Daytona\Facades;
 
+use ElliottLawson\Daytona\DaytonaClient;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -27,7 +28,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \ElliottLawson\Daytona\Sandbox sandboxFromResponse(\ElliottLawson\Daytona\DTOs\SandboxResponse $response)
  * @method static \ElliottLawson\Daytona\DTOs\PortPreviewUrl getPortPreviewUrl(string $sandboxId, int $port)
  *
- * @see \ElliottLawson\Daytona\DaytonaClient
+ * @see DaytonaClient
  */
 class Daytona extends Facade
 {

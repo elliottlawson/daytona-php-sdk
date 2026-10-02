@@ -42,7 +42,7 @@ it('can test which enhanced file operations are available in the API', function 
         $sandbox->createFolder('/home/daytona/created-folder', '755');
         echo "✓ createFolder works\n";
         expect($sandbox->fileExists('/home/daytona/created-folder'))->toBeTrue();
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo '✗ createFolder: '.substr($e->getMessage(), 0, 100)."...\n";
     }
 
@@ -52,7 +52,7 @@ it('can test which enhanced file operations are available in the API', function 
         echo "✓ moveFile works\n";
         expect($sandbox->fileExists('/home/daytona/test-dir/renamed.txt'))->toBeTrue();
         expect($sandbox->fileExists('/home/daytona/test-dir/file1.txt'))->toBeFalse();
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo '✗ moveFile: '.substr($e->getMessage(), 0, 100)."...\n";
     }
 
@@ -73,7 +73,7 @@ it('can test which enhanced file operations are available in the API', function 
         if ($details->group !== null) {
             echo "  - Has group field: {$details->group}\n";
         }
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo '✗ getFileDetails: '.substr($e->getMessage(), 0, 100)."...\n";
     }
 
@@ -81,7 +81,7 @@ it('can test which enhanced file operations are available in the API', function 
     try {
         $sandbox->setPermissions('/home/daytona/test-dir/script.sh', mode: '755');
         echo "✓ setPermissions works\n";
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo '✗ setPermissions: '.substr($e->getMessage(), 0, 100)."...\n";
     }
 
@@ -93,7 +93,7 @@ it('can test which enhanced file operations are available in the API', function 
         echo "✓ searchFiles works - found {$result->getCount()} files\n";
         expect($result)->toBeInstanceOf(SearchFilesResponse::class);
         expect($result->getCount())->toBeGreaterThan(0);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo '✗ searchFiles: '.substr($e->getMessage(), 0, 100)."...\n";
     }
 
@@ -107,7 +107,7 @@ it('can test which enhanced file operations are available in the API', function 
         if (count($matches) > 0) {
             expect($matches[0])->toBeInstanceOf(SearchMatch::class);
         }
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo '✗ findInFiles: '.substr($e->getMessage(), 0, 100)."...\n";
     }
 
@@ -124,7 +124,7 @@ it('can test which enhanced file operations are available in the API', function 
         expect($results[0])->toBeInstanceOf(ReplaceResult::class);
         expect($results[0]->isSuccess())->toBeTrue();
         expect($sandbox->readFile('/home/daytona/test-dir/version.txt'))->toContain('version: 2.0.0');
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo '✗ replaceInFiles: '.substr($e->getMessage(), 0, 100)."...\n";
     }
 
@@ -149,11 +149,11 @@ it('handles edge cases and errors for enhanced file operations', function () {
 
     // Test 3: Try to move non-existent file - this should throw
     expect(fn () => $sandbox->moveFile('/home/daytona/fake-file.txt', '/home/daytona/new-name.txt'))
-        ->toThrow(\Exception::class);
+        ->toThrow(Exception::class);
 
     // Test 4: Try to get details of non-existent file - this should throw
     expect(fn () => $sandbox->getFileDetails('/home/daytona/does-not-exist.txt'))
-        ->toThrow(\Exception::class);
+        ->toThrow(Exception::class);
 
     // Test 5: Replace in non-existent files - returns error results
     $fakeFiles = ['/home/daytona/fake1.txt', '/home/daytona/fake2.txt'];

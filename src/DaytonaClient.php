@@ -28,6 +28,7 @@ use ElliottLawson\Daytona\Exceptions\ConfigurationException;
 use ElliottLawson\Daytona\Exceptions\FileSystemException;
 use ElliottLawson\Daytona\Exceptions\GitException;
 use ElliottLawson\Daytona\Exceptions\SandboxException;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -952,7 +953,7 @@ class DaytonaClient
 
                 return new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
             }, $sandboxes);
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        } catch (ConnectionException $e) {
             Log::error('Connection error during list sandboxes', ['error' => $e->getMessage()]);
             throw ApiException::networkError('list sandboxes', $e);
         } catch (\Exception $e) {

@@ -194,7 +194,7 @@ it('handles file operation edge cases and errors', function () {
     try {
         $emptyListing = $sandbox->listDirectory('/home/daytona/emptydir');
         expect($emptyListing->files)->toBeArray();
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Directory might not exist after file deletion, that's ok
         expect(true)->toBeTrue();
     }

@@ -1,5 +1,6 @@
 <?php
 
+use ElliottLawson\Daytona\DTOs\PortPreviewUrl;
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
 use ElliottLawson\Daytona\DTOs\SessionCommandStatus;
 use ElliottLawson\Daytona\DTOs\SessionExecuteRequest;
@@ -31,11 +32,11 @@ afterEach(function () {
         foreach ($sessions as $session) {
             try {
                 $this->client->deleteSession($this->sandbox->getId(), $session->id);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // Continue cleanup
             }
         }
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Continue cleanup
     }
 
@@ -256,7 +257,7 @@ it('can start a long-running process with preview URL support', function () {
 
     // Get preview URL for port 8080
     $previewUrl = $this->sandbox->getPreviewLink(8080);
-    expect($previewUrl)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\PortPreviewUrl::class);
+    expect($previewUrl)->toBeInstanceOf(PortPreviewUrl::class);
     expect($previewUrl->url)->toContain('https://');
     expect($previewUrl->url)->toContain('8080');
 

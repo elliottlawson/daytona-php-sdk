@@ -30,7 +30,7 @@ it('can be instantiated from Laravel config', function () {
 });
 
 it('can be instantiated with typed configuration', function () {
-    $config = new \ElliottLawson\Daytona\DTOs\Config(
+    $config = new Config(
         apiUrl: 'https://api.daytona.io',
         apiKey: 'test-key',
         organizationId: 'test-org'

@@ -383,21 +383,21 @@ describe('Error Handling in Complex Workflows', function () {
         try {
             $this->sandbox->createFolder('/app/allowed', '755');
             $successCount++;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $errorCount++;
         }
 
         try {
             $this->sandbox->createFolder('/restricted/denied', '755');
             $successCount++;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $errorCount++;
         }
 
         try {
             $this->sandbox->createFolder('/app/another', '755');
             $successCount++;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $errorCount++;
         }
 
