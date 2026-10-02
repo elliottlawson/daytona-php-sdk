@@ -5,7 +5,7 @@ A PHP SDK for interacting with the Daytona API to manage development sandboxes.
 ## Requirements
 
 - PHP 8.2 or higher
-- Laravel 10.x, 11.x, or 12.x (optional, for Laravel integration)
+- Laravel 10.x, 11.x, 12.x, or 13.x (optional, for Laravel integration)
 
 ## Installation
 
@@ -191,6 +191,61 @@ $sandbox->refresh();
 // Get raw SandboxResponse DTO if needed
 $response = $client->getSandbox($sandboxId);
 ```
+
+#### List and Filter Sandboxes
+
+```php
+use ElliottLawson\Daytona\DTOs\SandboxFilter;
+
+// List every sandbox
+$sandboxes = $client->listSandboxes();
+foreach ($sandboxes as $sandbox) {
+    echo $sandbox->getId() . ' - ' . $sandbox->getState() . PHP_EOL;
+}
+
+// Filter by labels using the array shorthand
+$sandboxes = $client->listSandboxes(['env' => 'dev']);
+
+// Or build a filter with the SandboxFilter DTO
+$filter = SandboxFilter::byLabels(['env' => 'dev'])
+    ->withStates(['started'])
+    ->withPublic(false);
+
+$sandboxes = $client->listSandboxes($filter);
+```
+
+For large result sets, `listSandboxesPaginated()` returns one page at a time using Daytona's cursor pagination:
+
+```php
+// $filter, $cursor and $limit are all optional
+$filter = SandboxFilter::byLabels(['env' => 'dev'])->withStates(['started']);
+$cursor = null;
+$limit = 50;
+
+$response = $client->listSandboxesPaginated($filter, $cursor, $limit);
+
+foreach ($response->items as $sandbox) {
+    echo $sandbox->getId() . PHP_EOL;
+}
+
+// Fetch the next page while one is available
+while ($response->hasMore()) {
+    $response = $client->listSandboxesPaginated($filter, $response->nextCursor, $limit);
+
+    foreach ($response->items as $sandbox) {
+        echo $sandbox->getId() . PHP_EOL;
+    }
+}
+```
+
+`listSandboxesPaginated()` returns a `PaginatedSandboxesResponse`:
+
+- `$response->items` — `Sandbox[]` in the current page
+- `$response->nextCursor` — cursor for the next page, or `null` when exhausted
+- `$response->hasMore()` — whether another page is available
+- `$response->count()` / `$response->isEmpty()` — page size helpers
+
+`SandboxFilter` supports both the modern query params (`states`, `isPublic`, `name`, `cursor`, `limit`) and the legacy ones (`state`, `user`, `public`) for older Daytona versions. Filters can be built with named constructors (`byLabels()`, `byId()`, `byName()`, `byState()`, `byStates()`, `byUser()`, `byPublic()`) or chained with the `with*()` methods (e.g. `withCursor()`, `withLimit()`, `withStates()`).
 
 #### Start/Stop Sandbox
 
@@ -546,11 +601,6 @@ try {
 - `ApiException` - HTTP API errors with status codes and responses
 
 All exceptions extend the base `ElliottLawson\Daytona\Exception` class.
-    echo $commit->hash . ' - ' . $commit->message . PHP_EOL;
-    echo 'Author: ' . $commit->author . PHP_EOL;
-    echo 'Date: ' . $commit->date . PHP_EOL;
-}
-```
 
 ### Using the Sandbox Object
 
