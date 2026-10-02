@@ -33,8 +33,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        php: [8.2, 8.3]
-        laravel: [10.*, 11.*, 12.*]
+        php: [8.2, 8.3, 8.4]
+        laravel: [10.*, 11.*, 12.*, 13.*]
         include:
           - laravel: 10.*
             testbench: 8.*
@@ -48,8 +48,16 @@ jobs:
             testbench: 10.*
             pest: 3.*
             phpunit: 11.*
+          - laravel: 13.*
+            testbench: 11.*
+            pest: 4.*
+            phpunit: 12.*
         exclude:
-          - laravel: 12.*
+          # Laravel 10 is not supported on PHP 8.4
+          - laravel: 10.*
+            php: 8.4
+          # Laravel 13 requires PHP 8.3+
+          - laravel: 13.*
             php: 8.2
 
     name: P${{ matrix.php }} - L${{ matrix.laravel }}
@@ -71,8 +79,11 @@ jobs:
       - name: Install dependencies
         run: |
           composer require "laravel/framework:${{ matrix.laravel }}" --no-interaction --no-update
-          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" "pestphp/pest:${{ matrix.pest }}" --no-interaction --no-update
-          composer update --prefer-dist --no-interaction
+          composer require --dev "orchestra/testbench:${{ matrix.testbench }}" "pestphp/pest:${{ matrix.pest }}" "phpunit/phpunit:${{ matrix.phpunit }}" --no-interaction --no-update
+          # Composer >=2.10 blocks versions with security advisories by default.
+          # Every released Laravel 10/11 patch carries an unfixed advisory, so
+          # blocking must be disabled for those legs to resolve.
+          composer update --prefer-dist --no-interaction --no-blocking
 
       - name: Execute tests
         run: ./vendor/bin/pest --parallel
