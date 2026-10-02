@@ -10,6 +10,7 @@ use ElliottLawson\Daytona\DTOs\FilePermissionsParams;
 use ElliottLawson\Daytona\DTOs\GitBranchesResponse;
 use ElliottLawson\Daytona\DTOs\GitHistoryResponse;
 use ElliottLawson\Daytona\DTOs\GitStatusResponse;
+use ElliottLawson\Daytona\DTOs\PaginatedSandboxesResponse;
 use ElliottLawson\Daytona\DTOs\PortPreviewUrl;
 use ElliottLawson\Daytona\DTOs\ReplaceRequest;
 use ElliottLawson\Daytona\DTOs\ReplaceResult;
@@ -921,38 +922,106 @@ class DaytonaClient
     /**
      * List all sandboxes with optional filtering.
      *
+     * Handles both the legacy plain-array response and the cursor-paginated
+     * object returned by Daytona 0.180+ (`{ "items": [...], "nextCursor": ... }`).
+     *
      * @param  array|SandboxFilter|null  $filter  Filter criteria for sandboxes
      * @return Sandbox[] Array of Sandbox instances
      */
     public function listSandboxes($filter = null): array
     {
+        Log::debug('Listing Daytona sandboxes', ['filter' => $filter]);
+
+        $data = $this->fetchSandboxList($this->buildSandboxQueryParams($filter));
+
+        $sandboxes = $this->extractSandboxItems($data);
+
+        Log::info('Sandboxes listed', ['count' => count($sandboxes)]);
+
+        return array_map(function (array $sandboxData) {
+            $sandboxResponse = SandboxResponse::fromArray($sandboxData);
+
+            return new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
+        }, $sandboxes);
+    }
+
+    /**
+     * List a single page of sandboxes using Daytona's cursor pagination.
+     *
+     * @param  array|SandboxFilter|null  $filter  Filter criteria for sandboxes
+     * @param  string|null  $cursor  Cursor from a previous response
+     * @param  int|null  $limit  Number of results per page (1-200)
+     */
+    public function listSandboxesPaginated($filter = null, ?string $cursor = null, ?int $limit = null): PaginatedSandboxesResponse
+    {
+        Log::debug('Listing paginated Daytona sandboxes', [
+            'filter' => $filter,
+            'cursor' => $cursor,
+            'limit' => $limit,
+        ]);
+
+        $queryParams = $this->buildSandboxQueryParams($filter);
+
+        if ($cursor !== null) {
+            $queryParams['cursor'] = $cursor;
+        }
+
+        if ($limit !== null) {
+            $queryParams['limit'] = $limit;
+        }
+
+        $data = $this->fetchSandboxList($queryParams);
+
+        $items = array_map(function (array $sandboxData) {
+            $sandboxResponse = SandboxResponse::fromArray($sandboxData);
+
+            return new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
+        }, $this->extractSandboxItems($data));
+
+        $nextCursor = is_array($data) ? ($data['nextCursor'] ?? null) : null;
+
+        Log::info('Paginated sandboxes listed', [
+            'count' => count($items),
+            'nextCursor' => $nextCursor,
+        ]);
+
+        return new PaginatedSandboxesResponse(array_values($items), $nextCursor);
+    }
+
+    /**
+     * Normalise a filter argument into query parameters for GET /sandbox.
+     *
+     * @param  array|SandboxFilter|null  $filter
+     */
+    private function buildSandboxQueryParams($filter): array
+    {
+        if ($filter === null) {
+            return [];
+        }
+
+        if (is_array($filter)) {
+            // Handle legacy array-based labels filter
+            return empty($filter) ? [] : ['labels' => json_encode($filter)];
+        }
+
+        if ($filter instanceof SandboxFilter) {
+            return $filter->toArray();
+        }
+
+        return [];
+    }
+
+    /**
+     * Perform the sandbox list request and return the decoded response body.
+     */
+    private function fetchSandboxList(array $queryParams): array
+    {
         try {
-            Log::debug('Listing Daytona sandboxes', ['filter' => $filter]);
-
-            $queryParams = [];
-
-            if ($filter !== null) {
-                if (is_array($filter)) {
-                    // Handle legacy array-based labels filter
-                    if (! empty($filter)) {
-                        $queryParams['labels'] = json_encode($filter);
-                    }
-                } elseif ($filter instanceof SandboxFilter) {
-                    $queryParams = $filter->toArray();
-                }
-            }
-
             $response = $this->client()->get('sandbox', $queryParams);
 
-            $sandboxes = $response->json();
+            $data = $response->json();
 
-            Log::info('Sandboxes listed', ['count' => count($sandboxes)]);
-
-            return array_map(function (array $sandboxData) {
-                $sandboxResponse = SandboxResponse::fromArray($sandboxData);
-
-                return new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
-            }, $sandboxes);
+            return is_array($data) ? $data : [];
         } catch (ConnectionException $e) {
             Log::error('Connection error during list sandboxes', ['error' => $e->getMessage()]);
             throw ApiException::networkError('list sandboxes', $e);
@@ -967,6 +1036,26 @@ class DaytonaClient
             }
             throw $e;
         }
+    }
+
+    /**
+     * Extract the list of sandbox payloads from either the legacy array shape
+     * or the Daytona 0.180+ paginated object shape.
+     *
+     * @return array<int, array>
+     */
+    private function extractSandboxItems(array $data): array
+    {
+        if (isset($data['items']) && is_array($data['items'])) {
+            return array_values(array_filter($data['items'], 'is_array'));
+        }
+
+        // Legacy response: a plain list of sandbox objects.
+        if (array_is_list($data)) {
+            return array_values(array_filter($data, 'is_array'));
+        }
+
+        return [];
     }
 
     /**

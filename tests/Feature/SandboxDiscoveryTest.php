@@ -2,6 +2,7 @@
 
 use ElliottLawson\Daytona\DaytonaClient;
 use ElliottLawson\Daytona\DTOs\Config;
+use ElliottLawson\Daytona\DTOs\PaginatedSandboxesResponse;
 use ElliottLawson\Daytona\DTOs\SandboxFilter;
 use ElliottLawson\Daytona\Exceptions\SandboxException;
 use ElliottLawson\Daytona\Sandbox;
@@ -92,6 +93,122 @@ describe('Sandbox Discovery and Filtering', function () {
             $sandboxes = $this->client->listSandboxes();
 
             expect($sandboxes)->toHaveCount(0);
+        });
+
+        it('handles the paginated items response shape from Daytona 0.180+', function () {
+            Http::fake([
+                '*/sandbox*' => Http::response([
+                    'items' => $this->sampleSandboxes,
+                    'nextCursor' => 'cursor-abc',
+                ], 200),
+            ]);
+
+            $sandboxes = $this->client->listSandboxes();
+
+            expect($sandboxes)->toHaveCount(3)
+                ->and($sandboxes[0])->toBeInstanceOf(Sandbox::class)
+                ->and($sandboxes[0]->getId())->toBe('sandbox-1')
+                ->and($sandboxes[2]->getId())->toBe('sandbox-3');
+        });
+
+        it('returns an empty array for an empty paginated response', function () {
+            Http::fake([
+                '*/sandbox*' => Http::response([
+                    'items' => [],
+                    'nextCursor' => null,
+                ], 200),
+            ]);
+
+            $sandboxes = $this->client->listSandboxes();
+
+            expect($sandboxes)->toHaveCount(0);
+        });
+    });
+
+    describe('Cursor Pagination (Daytona 0.180+)', function () {
+        it('lists a page of sandboxes with cursor and next cursor', function () {
+            Http::fake([
+                '*/sandbox*' => Http::response([
+                    'items' => $this->sampleSandboxes,
+                    'nextCursor' => 'cursor-abc',
+                ], 200),
+            ]);
+
+            $result = $this->client->listSandboxesPaginated();
+
+            expect($result)->toBeInstanceOf(PaginatedSandboxesResponse::class)
+                ->and($result->items)->toHaveCount(3)
+                ->and($result->items[0])->toBeInstanceOf(Sandbox::class)
+                ->and($result->items[0]->getId())->toBe('sandbox-1')
+                ->and($result->nextCursor)->toBe('cursor-abc')
+                ->and($result->hasMore())->toBeTrue();
+        });
+
+        it('exposes the cursor and limit as query parameters', function () {
+            Http::fake([
+                '*/sandbox*' => Http::response([
+                    'items' => [$this->sampleSandboxes[0]],
+                    'nextCursor' => 'cursor-def',
+                ], 200),
+            ]);
+
+            $result = $this->client->listSandboxesPaginated(null, 'cursor-123', 10);
+
+            expect($result->count())->toBe(1)
+                ->and($result->nextCursor)->toBe('cursor-def');
+
+            Http::assertSent(function ($request) {
+                return str_contains($request->url(), 'sandbox') &&
+                       str_contains($request->url(), 'cursor=cursor-123') &&
+                       str_contains($request->url(), 'limit=10');
+            });
+        });
+
+        it('accepts a SandboxFilter with cursor and limit', function () {
+            Http::fake([
+                '*/sandbox*' => Http::response([
+                    'items' => $this->sampleSandboxes,
+                    'nextCursor' => null,
+                ], 200),
+            ]);
+
+            $filter = new SandboxFilter(cursor: 'filter-cursor', limit: 25);
+
+            $result = $this->client->listSandboxesPaginated($filter);
+
+            expect($result->nextCursor)->toBeNull()
+                ->and($result->hasMore())->toBeFalse();
+
+            Http::assertSent(function ($request) {
+                return str_contains($request->url(), 'cursor=filter-cursor') &&
+                       str_contains($request->url(), 'limit=25');
+            });
+        });
+
+        it('returns an empty page when there are no more sandboxes', function () {
+            Http::fake([
+                '*/sandbox*' => Http::response([
+                    'items' => [],
+                    'nextCursor' => null,
+                ], 200),
+            ]);
+
+            $result = $this->client->listSandboxesPaginated();
+
+            expect($result->items)->toBe([])
+                ->and($result->isEmpty())->toBeTrue()
+                ->and($result->count())->toBe(0);
+        });
+
+        it('still supports the legacy plain-array response', function () {
+            Http::fake([
+                '*/sandbox*' => Http::response($this->sampleSandboxes, 200),
+            ]);
+
+            $result = $this->client->listSandboxesPaginated();
+
+            expect($result->items)->toHaveCount(3)
+                ->and($result->nextCursor)->toBeNull();
         });
     });
 
@@ -197,6 +314,48 @@ describe('Sandbox Discovery and Filtering', function () {
             expect($publicFilter->toArray()['public'])->toBe('true')
                 ->and($privateFilter->toArray()['public'])->toBe('false');
         });
+
+        it('supports cursor and limit pagination fields', function () {
+            $filter = (new SandboxFilter)
+                ->withCursor('cursor-abc')
+                ->withLimit(50);
+
+            expect($filter->toArray())->toBe([
+                'cursor' => 'cursor-abc',
+                'limit' => 50,
+            ]);
+        });
+
+        it('maps isPublic to the modern isPublic query param', function () {
+            $publicFilter = new SandboxFilter(isPublic: true);
+            $privateFilter = new SandboxFilter(isPublic: false);
+
+            expect($publicFilter->toArray()['isPublic'])->toBe('true')
+                ->and($privateFilter->toArray()['isPublic'])->toBe('false')
+                ->and($publicFilter->toArray())->not->toHaveKey('public');
+        });
+
+        it('supports the modern states array filter', function () {
+            $filter = SandboxFilter::byStates(['started', 'stopped']);
+
+            expect($filter->toArray()['states'])->toBe(['started', 'stopped']);
+        });
+
+        it('combines modern fields into clean query params', function () {
+            $filter = SandboxFilter::byName('my-sandbox')
+                ->withPublic(false)
+                ->withStates(['started'])
+                ->withCursor('next-cursor')
+                ->withLimit(10);
+
+            expect($filter->toArray())->toBe([
+                'name' => 'my-sandbox',
+                'states' => ['started'],
+                'isPublic' => 'false',
+                'cursor' => 'next-cursor',
+                'limit' => 10,
+            ]);
+        });
     });
 
     describe('Filter with SandboxFilter DTO', function () {
@@ -238,6 +397,25 @@ describe('Sandbox Discovery and Filtering', function () {
                 return str_contains($request->url(), 'sandbox') &&
                        str_contains($request->url(), 'user=john') &&
                        str_contains($request->url(), 'state=started');
+            });
+        });
+
+        it('sends modern states and isPublic filters as query params', function () {
+            Http::fake([
+                '*/sandbox*' => Http::response([
+                    'items' => [],
+                    'nextCursor' => null,
+                ], 200),
+            ]);
+
+            $filter = SandboxFilter::byStates(['started', 'stopped'])->withPublic(false);
+            $this->client->listSandboxes($filter);
+
+            Http::assertSent(function ($request) {
+                $data = $request->data();
+
+                return ($data['states'] ?? null) === ['started', 'stopped'] &&
+                       ($data['isPublic'] ?? null) === 'false';
             });
         });
     });
