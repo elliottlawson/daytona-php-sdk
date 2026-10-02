@@ -1,5 +1,11 @@
 # Daytona PHP SDK
 
+[![Tests](https://github.com/elliottlawson/daytona-php-sdk/actions/workflows/tests.yml/badge.svg?style=flat-square)](https://github.com/elliottlawson/daytona-php-sdk/actions/workflows/tests.yml)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/elliottlawson/daytona-php-sdk.svg?style=flat-square)](https://packagist.org/packages/elliottlawson/daytona-php-sdk)
+[![Total Downloads](https://img.shields.io/packagist/dt/elliottlawson/daytona-php-sdk.svg?style=flat-square)](https://packagist.org/packages/elliottlawson/daytona-php-sdk)
+[![License](https://img.shields.io/packagist/l/elliottlawson/daytona-php-sdk.svg?style=flat-square)](https://packagist.org/packages/elliottlawson/daytona-php-sdk)
+[![PHP Version Require](https://img.shields.io/packagist/dependency-v/elliottlawson/daytona-php-sdk/php.svg?style=flat-square)](https://packagist.org/packages/elliottlawson/daytona-php-sdk)
+
 A PHP SDK for interacting with the Daytona API to manage development sandboxes.
 
 ## Requirements
