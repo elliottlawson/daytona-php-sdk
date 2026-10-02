@@ -136,7 +136,7 @@ PHP;
         echo "\nYou can access:\n";
         echo "  - Main page: {$previewUrl->url}/\n";
         echo "  - API endpoint: {$previewUrl->url}/api.php\n";
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo '⚠️  Could not get preview URL: '.$e->getMessage()."\n";
         echo "   The server is still running, but external access may not be available.\n";
     }
@@ -190,7 +190,7 @@ PHP;
             // Small delay before next check
             usleep(500000); // 500ms
         }
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo "\nError streaming logs: ".$e->getMessage()."\n";
     }
 
@@ -205,7 +205,7 @@ PHP;
         );
         $client->executeSessionCommand($sandboxId, $sessionId, $stopRequest);
         echo "Server stopped\n";
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Server might have already stopped
     }
 
@@ -213,7 +213,7 @@ PHP;
     try {
         $client->deleteSession($sandboxId, $sessionId);
         echo "Session deleted\n";
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         echo 'Could not delete session: '.$e->getMessage()."\n";
     }
 
@@ -225,7 +225,7 @@ PHP;
             try {
                 $sandbox->delete();
                 echo "Sandbox deleted\n";
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 echo 'Could not delete sandbox: '.$e->getMessage()."\n";
             }
         }
@@ -233,7 +233,7 @@ PHP;
 
     echo "\nDone!\n";
 
-} catch (\Exception $e) {
+} catch (Exception $e) {
     echo "\n❌ Error: ".$e->getMessage()."\n";
     echo 'Trace: '.$e->getTraceAsString()."\n";
 
@@ -241,7 +241,7 @@ PHP;
     if (isset($sessionId) && isset($sandboxId)) {
         try {
             $client->deleteSession($sandboxId, $sessionId);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Ignore cleanup errors
         }
     }

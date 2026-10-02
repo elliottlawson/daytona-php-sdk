@@ -106,7 +106,7 @@ it('creates ApiException for 500 response', function () {
 });
 
 it('preserves previous exceptions', function () {
-    $previous = new \Exception('Original error');
+    $previous = new Exception('Original error');
 
     $exception = SandboxException::creationFailed('New error', $previous);
     expect($exception->getPrevious())->toBe($previous);

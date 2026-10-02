@@ -3,6 +3,7 @@
 use ElliottLawson\Daytona\DaytonaClient;
 use ElliottLawson\Daytona\DTOs\CommandResponse;
 use ElliottLawson\Daytona\DTOs\Config;
+use ElliottLawson\Daytona\DTOs\DirectoryListingResponse;
 use ElliottLawson\Daytona\Sandbox;
 use Illuminate\Support\Facades\Http;
 
@@ -95,7 +96,7 @@ it('can list directory contents', function () {
 
     $listing = $sandbox->listDirectory('/workspace');
 
-    expect($listing)->toBeInstanceOf(\ElliottLawson\Daytona\DTOs\DirectoryListingResponse::class)
+    expect($listing)->toBeInstanceOf(DirectoryListingResponse::class)
         ->and($listing->files)->toHaveCount(3)
         ->and($listing->files[0]->name)->toBe('index.js')
         ->and($listing->files[0]->isDirectory)->toBe(false);

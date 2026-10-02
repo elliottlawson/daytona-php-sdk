@@ -106,7 +106,7 @@ try {
     $client->deleteSession($sandboxId, $sessionId);
     echo "Session deleted successfully\n";
 
-} catch (\Exception $e) {
+} catch (Exception $e) {
     echo 'Error: '.$e->getMessage()."\n";
     echo 'Trace: '.$e->getTraceAsString()."\n";
 }

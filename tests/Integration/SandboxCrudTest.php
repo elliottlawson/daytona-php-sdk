@@ -2,6 +2,7 @@
 
 use ElliottLawson\Daytona\DTOs\SandboxCreateParameters;
 use ElliottLawson\Daytona\DTOs\SandboxResponse;
+use ElliottLawson\Daytona\Exceptions\ApiException;
 use ElliottLawson\Daytona\Sandbox;
 use Tests\Integration\SandboxTestHelper;
 
@@ -645,9 +646,9 @@ it('handles attempts to delete non-existent sandbox gracefully', function () {
         $this->client->deleteSandbox($nonExistentId);
         // If we get here, the API might be too permissive
         expect(true)->toBeTrue();
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Expected behavior - should throw an exception
-        expect($e)->toBeInstanceOf(\ElliottLawson\Daytona\Exceptions\ApiException::class);
+        expect($e)->toBeInstanceOf(ApiException::class);
     }
 });
 
@@ -657,8 +658,8 @@ it('handles attempts to get non-existent sandbox details', function () {
     try {
         $this->client->getSandbox($nonExistentId);
         fail('Expected exception when getting non-existent sandbox');
-    } catch (\Exception $e) {
-        expect($e)->toBeInstanceOf(\ElliottLawson\Daytona\Exceptions\ApiException::class);
+    } catch (Exception $e) {
+        expect($e)->toBeInstanceOf(ApiException::class);
     }
 });
 
@@ -669,16 +670,16 @@ it('handles attempts to start/stop non-existent sandbox', function () {
     try {
         $this->client->startSandbox($nonExistentId, 5);
         fail('Expected exception when starting non-existent sandbox');
-    } catch (\Exception $e) {
-        expect($e)->toBeInstanceOf(\ElliottLawson\Daytona\Exceptions\ApiException::class);
+    } catch (Exception $e) {
+        expect($e)->toBeInstanceOf(ApiException::class);
     }
 
     // Test stop
     try {
         $this->client->stopSandbox($nonExistentId, 5);
         fail('Expected exception when stopping non-existent sandbox');
-    } catch (\Exception $e) {
-        expect($e)->toBeInstanceOf(\ElliottLawson\Daytona\Exceptions\ApiException::class);
+    } catch (Exception $e) {
+        expect($e)->toBeInstanceOf(ApiException::class);
     }
 });
 
@@ -690,13 +691,13 @@ it('validates error response contains meaningful information', function () {
     try {
         $this->client->getSandbox($nonExistentId);
         fail('Expected exception');
-    } catch (\ElliottLawson\Daytona\Exceptions\ApiException $e) {
+    } catch (ApiException $e) {
         expect($e->getMessage())->toContain($nonExistentId)
             ->or->toContain('not found')
             ->or->toContain('404')
             ->or->toContain('get sandbox');
         expect($e->getCode())->toBeInt();
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Other exception types are also acceptable
         expect($e->getMessage())->not->toBeEmpty();
     }
@@ -716,9 +717,9 @@ it('handles invalid sandbox creation parameters', function () {
 
         // Some APIs might accept negative values, so we just verify it was created
         expect($sandbox)->toBeInstanceOf(Sandbox::class);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // If API validates and rejects invalid values, that's also good
-        expect($e)->toBeInstanceOf(\Exception::class);
+        expect($e)->toBeInstanceOf(Exception::class);
     }
 });
 
@@ -739,7 +740,7 @@ it('handles timeout during sandbox state transitions', function () {
 
         // If we get here, it transitioned very quickly
         expect($sandbox->refresh()->getState())->toBe('started');
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         // Expected - timeout or state mismatch
         expect($e->getMessage())->toContain('failed to reach target state');
     }
