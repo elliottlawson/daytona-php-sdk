@@ -11,7 +11,7 @@ A PHP SDK for interacting with the Daytona API to manage development sandboxes.
 ## Requirements
 
 - PHP 8.2 or higher
-- Laravel 10.x, 11.x, 12.x, or 13.x (optional, for Laravel integration)
+- Laravel 12.x or 13.x (optional, for Laravel integration)
 
 ## Installation
 
