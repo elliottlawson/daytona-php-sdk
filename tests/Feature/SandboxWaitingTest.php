@@ -255,12 +255,13 @@ describe('Sandbox Waiting Mechanisms', function () {
                 'gpu' => 0,
                 'memory' => 4,
                 'disk' => 20,
+                'toolboxProxyUrl' => 'https://proxy.test/toolbox',
             ];
 
             Http::fake([
                 '*/sandbox/test-sandbox/start' => Http::response($sandboxData, 200),
                 '*/sandbox/test-sandbox' => Http::response($sandboxData, 200),
-                '*/toolbox/test-sandbox/toolbox/process/execute' => Http::response([
+                '*/toolbox/test-sandbox/process/execute' => Http::response([
                     'exitCode' => 0,
                     'stdout' => 'Hello World',
                     'stderr' => '',

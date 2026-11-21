@@ -6,6 +6,8 @@ use ElliottLawson\Daytona\Sandbox;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
+    fakeToolboxProxy();
+
     $config = new Config(
         apiKey: 'test-api-key',
         apiUrl: 'https://api.example.com',
@@ -18,9 +20,9 @@ beforeEach(function () {
 describe('Project Setup Workflow', function () {
     it('can set up a complete project structure', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/upload*' => Http::response(['success' => true], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/upload*' => Http::response(['success' => true], 200),
         ]);
 
         // Create project directory structure
@@ -47,14 +49,14 @@ describe('Project Setup Workflow', function () {
             ->setPermissions('/app/uploads', '777');
 
         // Verify all requests were made
-        Http::assertSentCount(14); // 7 folders + 2 files + 5 permission sets
+        Http::assertSentCount(15); // 7 folders + 2 files + 5 permission sets + toolbox proxy lookup
     });
 });
 
 describe('Code Migration Workflow', function () {
     it('can find and replace deprecated API calls across multiple files', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/find*' => Http::response([
+            '*/toolbox/sandbox-123/files/find*' => Http::response([
                 [
                     'file' => '/app/src/Controller.php',
                     'line' => 15,
@@ -66,10 +68,10 @@ describe('Code Migration Workflow', function () {
                     'content' => 'return oldApi()->getData();',
                 ],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/search*' => Http::response([
+            '*/toolbox/sandbox-123/files/search*' => Http::response([
                 'files' => ['/app/src/Controller.php', '/app/src/Service.php', '/app/src/Helper.php'],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response([
+            '*/toolbox/sandbox-123/files/replace*' => Http::response([
                 [
                     'file' => '/app/src/Controller.php',
                     'success' => true,
@@ -106,15 +108,15 @@ describe('Code Migration Workflow', function () {
             expect($result->isSuccess())->toBeTrue();
         }
 
-        Http::assertSentCount(3); // find + search + replace
+        Http::assertSentCount(4); // find + search + replace + toolbox proxy lookup
     });
 
     it('handles mixed success and failure in bulk operations', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search*' => Http::response([
+            '*/toolbox/sandbox-123/files/search*' => Http::response([
                 'files' => ['/app/writable.php', '/app/readonly.php', '/app/missing.php'],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response([
+            '*/toolbox/sandbox-123/files/replace*' => Http::response([
                 [
                     'file' => '/app/writable.php',
                     'success' => true,
@@ -152,13 +154,13 @@ describe('Code Migration Workflow', function () {
 describe('File Organization Workflow', function () {
     it('can organize files by type and date', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search?path=%2Fapp&pattern=*.log' => Http::response([
+            '*/toolbox/sandbox-123/files/search?path=%2Fapp&pattern=*.log' => Http::response([
                 'files' => ['/app/log1.log', '/app/log2.log'],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/search?path=%2Fapp&pattern=*.tmp' => Http::response([
+            '*/toolbox/sandbox-123/files/search?path=%2Fapp&pattern=*.tmp' => Http::response([
                 'files' => ['/app/temp1.tmp', '/app/temp2.tmp'],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/info*' => Http::response([
+            '*/toolbox/sandbox-123/files/info*' => Http::response([
                 'name' => 'log1.log',
                 'isDir' => false,
                 'size' => 1024,
@@ -168,8 +170,8 @@ describe('File Organization Workflow', function () {
                 'owner' => 'www-data',
                 'group' => 'www-data',
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/move*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/move*' => Http::response([], 200),
         ]);
 
         // Find log files
@@ -201,17 +203,17 @@ describe('File Organization Workflow', function () {
         }
 
         // Verify HTTP calls - 2 searches + 1 info + 2 folders + 4 moves = 9 total
-        Http::assertSentCount(9);
+        Http::assertSentCount(10); // includes the toolbox proxy lookup
     });
 });
 
 describe('Security Hardening Workflow', function () {
     it('can audit and fix file permissions across project', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search*' => Http::response([
+            '*/toolbox/sandbox-123/files/search*' => Http::response([
                 'files' => ['/app/config.php', '/app/secret.key', '/app/script.sh'],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/info*' => Http::response([
+            '*/toolbox/sandbox-123/files/info*' => Http::response([
                 'name' => 'config.php',
                 'isDir' => false,
                 'size' => 1024,
@@ -221,7 +223,7 @@ describe('Security Hardening Workflow', function () {
                 'owner' => 'root',
                 'group' => 'root',
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         // Find sensitive files
@@ -242,23 +244,23 @@ describe('Security Hardening Workflow', function () {
             // Executable scripts
             ->setPermissions('/app/script.sh', '755', 'www-data', 'www-data');
 
-        Http::assertSentCount(7); // 3 searches + 1 info + 3 permission sets
+        Http::assertSentCount(8); // 3 searches + 1 info + 3 permission sets + toolbox proxy lookup
     });
 });
 
 describe('Development Environment Setup', function () {
     it('can set up a complete development environment', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/upload*' => Http::response(['success' => true], 200),
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response([
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/upload*' => Http::response(['success' => true], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response([
                 [
                     'file' => '/app/.env.example',
                     'success' => true,
                 ],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/move*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/move*' => Http::response([], 200),
         ]);
 
         // Create development directory structure
@@ -292,24 +294,24 @@ describe('Development Environment Setup', function () {
             ->setPermissions('/app/storage/cache', '777')
             ->setPermissions('/app/storage/uploads', '777');
 
-        Http::assertSentCount(18); // Complex workflow with many operations
+        Http::assertSentCount(19); // Complex workflow with many operations + toolbox proxy lookup
     });
 });
 
 describe('Backup and Deployment Workflow', function () {
     it('can prepare application for deployment', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search?path=%2Fapp&pattern=.env' => Http::response([
+            '*/toolbox/sandbox-123/files/search?path=%2Fapp&pattern=.env' => Http::response([
                 'files' => ['/app/.env'],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/find*' => Http::response([
+            '*/toolbox/sandbox-123/files/find*' => Http::response([
                 [
                     'file' => '/app/src/debug.php',
                     'line' => 5,
                     'content' => 'echo "Debug mode enabled";',
                 ],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response([
+            '*/toolbox/sandbox-123/files/replace*' => Http::response([
                 [
                     'file' => '/app/.env',
                     'success' => true,
@@ -323,9 +325,9 @@ describe('Backup and Deployment Workflow', function () {
                     'success' => true,
                 ],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/move*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/move*' => Http::response([], 200),
         ]);
 
         // Find configuration files
@@ -363,18 +365,18 @@ describe('Backup and Deployment Workflow', function () {
             expect($result->isSuccess())->toBeTrue();
         }
 
-        Http::assertSentCount(8); // search + find + replace + folder + 3 permissions + move
+        Http::assertSentCount(9); // search + find + replace + folder + 3 permissions + move + toolbox proxy lookup
     });
 });
 
 describe('Error Handling in Complex Workflows', function () {
     it('gracefully handles partial failures in batch operations', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::sequence()
+            '*/toolbox/sandbox-123/files/folder*' => Http::sequence()
                 ->push([], 200) // First folder succeeds
                 ->push(['error' => 'Permission denied'], 403) // Second fails
                 ->push([], 200), // Third succeeds
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $successCount = 0;
@@ -407,12 +409,12 @@ describe('Error Handling in Complex Workflows', function () {
         expect($successCount)->toBe(2);
         expect($errorCount)->toBe(1);
 
-        Http::assertSentCount(4); // 3 folder attempts + 1 permission set
+        Http::assertSentCount(5); // 3 folder attempts + 1 permission set + toolbox proxy lookup
     });
 
     it('provides detailed error information for debugging', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response([
+            '*/toolbox/sandbox-123/files/replace*' => Http::response([
                 [
                     'file' => '/app/success.txt',
                     'success' => true,

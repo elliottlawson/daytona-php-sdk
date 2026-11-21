@@ -11,6 +11,8 @@ use ElliottLawson\Daytona\Sandbox;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
+    fakeToolboxProxy();
+
     $config = new Config(
         apiKey: 'test-api-key',
         apiUrl: 'https://api.example.com',
@@ -23,7 +25,7 @@ beforeEach(function () {
 describe('createFolder convenience method', function () {
     it('can create directories with default permissions', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox->createFolder('/app/data');
@@ -31,7 +33,7 @@ describe('createFolder convenience method', function () {
         expect($result)->toBe($this->sandbox);
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/folder') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/folder') &&
                    str_contains($request->url(), 'path='.urlencode('/app/data')) &&
                    $request['mode'] === '755'; // default
         });
@@ -39,7 +41,7 @@ describe('createFolder convenience method', function () {
 
     it('can create directories with custom permissions', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox->createFolder('/app/uploads', '777');
@@ -54,7 +56,7 @@ describe('createFolder convenience method', function () {
 
     it('supports method chaining', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox
@@ -64,14 +66,14 @@ describe('createFolder convenience method', function () {
 
         expect($result)->toBe($this->sandbox);
 
-        Http::assertSentCount(3);
+        Http::assertSentCount(4); // includes the toolbox proxy lookup
     });
 });
 
 describe('moveFile convenience method', function () {
     it('can move files and directories', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/move*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/move*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox->moveFile('/tmp/file.txt', '/app/file.txt');
@@ -79,7 +81,7 @@ describe('moveFile convenience method', function () {
         expect($result)->toBe($this->sandbox);
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/move') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/move') &&
                    str_contains($request->url(), 'source='.urlencode('/tmp/file.txt')) &&
                    str_contains($request->url(), 'destination='.urlencode('/app/file.txt'));
         });
@@ -87,7 +89,7 @@ describe('moveFile convenience method', function () {
 
     it('supports method chaining for multiple moves', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/move*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/move*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox
@@ -96,7 +98,7 @@ describe('moveFile convenience method', function () {
 
         expect($result)->toBe($this->sandbox);
 
-        Http::assertSentCount(2);
+        Http::assertSentCount(3); // includes the toolbox proxy lookup
     });
 });
 
@@ -114,7 +116,7 @@ describe('getFileDetails convenience method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/info*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/info*' => Http::response($mockResponse, 200),
         ]);
 
         $fileInfo = $this->sandbox->getFileDetails('/app/config.json');
@@ -129,7 +131,7 @@ describe('getFileDetails convenience method', function () {
 describe('setFilePermissions convenience method', function () {
     it('can set permissions using FilePermissionsParams', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $permissions = new FilePermissionsParams(
@@ -152,7 +154,7 @@ describe('setFilePermissions convenience method', function () {
 
     it('supports method chaining', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $permissions = new FilePermissionsParams(mode: '755');
@@ -163,14 +165,14 @@ describe('setFilePermissions convenience method', function () {
 
         expect($result)->toBe($this->sandbox);
 
-        Http::assertSentCount(2);
+        Http::assertSentCount(3); // includes the toolbox proxy lookup
     });
 });
 
 describe('setPermissions convenience method', function () {
     it('can set permissions with individual parameters', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox->setPermissions('/app/script.sh', '755');
@@ -185,7 +187,7 @@ describe('setPermissions convenience method', function () {
 
     it('can set permissions with all parameters', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox->setPermissions('/app/file.txt', '644', 'www-data', 'www-data');
@@ -202,7 +204,7 @@ describe('setPermissions convenience method', function () {
 
     it('can set only owner and group', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox->setPermissions('/app/data/', null, 'user', 'users');
@@ -218,7 +220,7 @@ describe('setPermissions convenience method', function () {
 
     it('supports method chaining', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox
@@ -227,7 +229,7 @@ describe('setPermissions convenience method', function () {
 
         expect($result)->toBe($this->sandbox);
 
-        Http::assertSentCount(2);
+        Http::assertSentCount(3); // includes the toolbox proxy lookup
     });
 });
 
@@ -238,7 +240,7 @@ describe('searchFiles convenience method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/search*' => Http::response($mockResponse, 200),
         ]);
 
         $result = $this->sandbox->searchFiles('/app', '*.json');
@@ -252,7 +254,7 @@ describe('searchFiles convenience method', function () {
         $mockResponse = ['files' => []];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/search*' => Http::response($mockResponse, 200),
         ]);
 
         $result = $this->sandbox->searchFiles('/app', '*.nonexistent');
@@ -277,7 +279,7 @@ describe('findInFiles convenience method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/find*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/find*' => Http::response($mockResponse, 200),
         ]);
 
         $matches = $this->sandbox->findInFiles('/app/src', 'TODO|FIXME');
@@ -291,7 +293,7 @@ describe('findInFiles convenience method', function () {
 
     it('handles no matches found', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/find*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/find*' => Http::response([], 200),
         ]);
 
         $matches = $this->sandbox->findInFiles('/app', 'nonexistent-pattern');
@@ -315,7 +317,7 @@ describe('replaceInFiles convenience method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response($mockResponse, 200),
         ]);
 
         $files = ['/app/config.php', '/app/settings.php'];
@@ -343,7 +345,7 @@ describe('replaceInFiles convenience method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response($mockResponse, 200),
         ]);
 
         $files = ['/app/config.php', '/app/readonly.txt'];
@@ -366,7 +368,7 @@ describe('replaceInFile convenience method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response($mockResponse, 200),
         ]);
 
         $result = $this->sandbox->replaceInFile('/app/config.php', 'debug = false', 'debug = true');
@@ -378,7 +380,7 @@ describe('replaceInFile convenience method', function () {
         Http::assertSent(function ($request) {
             $requestData = $request->data();
 
-            return $requestData['files'] === ['/app/config.php'] &&
+            return ($requestData['files'] ?? null) === ['/app/config.php'] &&
                    $requestData['pattern'] === 'debug = false' &&
                    $requestData['newValue'] === 'debug = true';
         });
@@ -394,7 +396,7 @@ describe('replaceInFile convenience method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response($mockResponse, 200),
         ]);
 
         $result = $this->sandbox->replaceInFile('/app/readonly.txt', 'old', 'new');
@@ -407,7 +409,7 @@ describe('replaceInFile convenience method', function () {
 
     it('handles no result returned from API', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox->replaceInFile('/app/file.txt', 'pattern', 'replacement');
@@ -422,9 +424,9 @@ describe('replaceInFile convenience method', function () {
 describe('method chaining workflow', function () {
     it('can chain multiple file operations together', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/move*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/move*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox
@@ -435,14 +437,14 @@ describe('method chaining workflow', function () {
 
         expect($result)->toBe($this->sandbox);
 
-        Http::assertSentCount(4);
+        Http::assertSentCount(5); // includes the toolbox proxy lookup
     });
 
     it('can combine file operations with existing operations', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/upload*' => Http::response(['success' => true], 200),
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/upload*' => Http::response(['success' => true], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $result = $this->sandbox
@@ -452,21 +454,21 @@ describe('method chaining workflow', function () {
 
         expect($result)->toBe($this->sandbox);
 
-        Http::assertSentCount(3);
+        Http::assertSentCount(4); // includes the toolbox proxy lookup
     });
 });
 
 describe('integration with existing sandbox methods', function () {
     it('new methods work alongside existing file operations', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files*' => Http::response([
+            '*/toolbox/sandbox-123/files*' => Http::response([
                 'files' => [
                     ['name' => 'config.php', 'path' => '/app/config.php', 'isDirectory' => false, 'size' => 1024],
                     ['name' => 'uploads', 'path' => '/app/uploads', 'isDirectory' => true, 'size' => 0],
                 ],
             ], 200),
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         // Use existing method
@@ -479,6 +481,6 @@ describe('integration with existing sandbox methods', function () {
 
         expect($listing->files)->toHaveCount(2);
 
-        Http::assertSentCount(3);
+        Http::assertSentCount(4); // includes the toolbox proxy lookup
     });
 });

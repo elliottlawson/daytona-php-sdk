@@ -197,7 +197,7 @@ describe('Centralized Error Handling', function () {
                 '*/sandbox/test/start' => Http::response(['error' => 'Unauthorized'], 401),
                 '*/sandbox/test/stop' => Http::response(['error' => 'Forbidden'], 403),
                 '*/sandbox/test' => Http::response(['error' => 'Not found'], 404),
-                '*/toolbox/test/toolbox/process/execute' => Http::response(['error' => 'Server error'], 500),
+                '*/toolbox/test/process/execute' => Http::response(['error' => 'Server error'], 500),
             ]);
 
             // Test multiple methods use centralized error handling
@@ -230,7 +230,7 @@ describe('Centralized Error Handling', function () {
         it('provides consistent error messages across different operations', function () {
             Http::fake([
                 '*/sandbox/test' => Http::response(['error' => 'Not found'], 404),
-                '*/toolbox/test/toolbox/files/download*' => Http::response(['error' => 'Not found'], 404),
+                '*/toolbox/test/files/download*' => Http::response(['error' => 'Not found'], 404),
             ]);
 
             $getSandboxException = null;

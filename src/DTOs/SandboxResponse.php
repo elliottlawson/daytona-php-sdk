@@ -29,6 +29,7 @@ class SandboxResponse
         public readonly ?string $updatedAt = null,
         public readonly ?string $runnerDomain = null,
         public readonly ?string $errorReason = null,
+        public readonly ?string $toolboxProxyUrl = null,
     ) {}
 
     public static function fromArray(array $data): self
@@ -58,6 +59,7 @@ class SandboxResponse
             updatedAt: $data['updatedAt'] ?? null,
             runnerDomain: $data['runnerDomain'] ?? null,
             errorReason: $data['errorReason'] ?? null,
+            toolboxProxyUrl: $data['toolboxProxyUrl'] ?? null,
         );
     }
 
@@ -87,6 +89,7 @@ class SandboxResponse
             'createdAt' => $this->createdAt,
             'updatedAt' => $this->updatedAt,
             'runnerDomain' => $this->runnerDomain,
+            'toolboxProxyUrl' => $this->toolboxProxyUrl,
         ], fn ($value) => $value !== null);
     }
 }

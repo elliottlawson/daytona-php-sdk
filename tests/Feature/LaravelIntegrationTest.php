@@ -62,7 +62,7 @@ it('can perform full workflow using Laravel integration', function () {
             'createdAt' => now()->toISOString(),
             'updatedAt' => now()->toISOString(),
         ], 201),
-        '*/toolbox/*/toolbox/process/execute' => Http::response([
+        '*/toolbox/*/process/execute' => Http::response([
             'exitCode' => 0,
             'stdout' => 'Laravel 10.x',
             'stderr' => '',
