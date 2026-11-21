@@ -36,6 +36,9 @@ use Illuminate\Support\Facades\Log;
 
 class DaytonaClient
 {
+    /** @var array<string, string> Sandbox id => toolbox proxy URL ('' when the API advertises none) */
+    private array $toolboxProxyUrls = [];
+
     public function __construct(
         private Config $config,
     ) {
@@ -59,6 +62,43 @@ class DaytonaClient
         }
 
         return $client;
+    }
+
+    /**
+     * HTTP client for a sandbox's toolbox API (process, files, git, sessions).
+     */
+    private function toolbox(string $sandboxId, ?int $timeout = 30)
+    {
+        return $this->client($timeout)->baseUrl($this->toolboxBaseUrl($sandboxId));
+    }
+
+    /**
+     * Base URL of a sandbox's toolbox API.
+     *
+     * Daytona serves the toolbox through a per-region proxy advertised on each sandbox
+     * as `toolboxProxyUrl` (e.g. https://proxy.app-eu.daytona.io/toolbox). The old
+     * `{apiUrl}/toolbox/{id}/toolbox` route was removed from the main API and now
+     * returns 404, so it is only used when the API does not advertise a proxy
+     * (older self-hosted installations).
+     */
+    private function toolboxBaseUrl(string $sandboxId): string
+    {
+        if (! isset($this->toolboxProxyUrls[$sandboxId])) {
+            $this->rememberToolboxProxyUrl($this->client()->get("sandbox/{$sandboxId}")->json() ?? []);
+        }
+
+        $proxyUrl = $this->toolboxProxyUrls[$sandboxId] ?? null;
+
+        return $proxyUrl
+            ? rtrim($proxyUrl, '/')."/{$sandboxId}"
+            : rtrim($this->config->apiUrl, '/')."/toolbox/{$sandboxId}/toolbox";
+    }
+
+    private function rememberToolboxProxyUrl(array $sandbox): void
+    {
+        if (isset($sandbox['id'])) {
+            $this->toolboxProxyUrls[$sandbox['id']] = $sandbox['toolboxProxyUrl'] ?? '';
+        }
     }
 
     /**
@@ -121,6 +161,8 @@ class DaytonaClient
             'response' => $data,
         ]);
 
+        $this->rememberToolboxProxyUrl($data);
+
         $sandboxResponse = SandboxResponse::fromArray($data);
         $sandbox = new Sandbox($sandboxResponse->id, $this, $sandboxResponse);
 
@@ -162,6 +204,8 @@ class DaytonaClient
             'state' => $sandbox['state'] ?? 'unknown',
             'sandbox' => $sandbox,
         ]);
+
+        $this->rememberToolboxProxyUrl($sandbox);
 
         return SandboxResponse::fromArray($sandbox);
     }
@@ -227,7 +271,7 @@ class DaytonaClient
 
             // Calculate HTTP timeout based on command timeout + buffer
             $httpTimeout = $timeout ? (int) ceil($timeout / 1000) + 10 : 300; // Convert ms to seconds + buffer
-            $response = $this->client($httpTimeout)->post("toolbox/{$sandboxId}/toolbox/process/execute", $payload);
+            $response = $this->toolbox($sandboxId, $httpTimeout)->post('process/execute', $payload);
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'execute command');
@@ -263,7 +307,7 @@ class DaytonaClient
             'path' => $path,
         ]);
 
-        $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/download", [
+        $response = $this->toolbox($sandboxId)->get('files/download', [
             'path' => $path,
         ]);
 
@@ -281,9 +325,9 @@ class DaytonaClient
 
             // Use multipart form data for file upload
             // It seems the API expects path as a query parameter
-            $response = $this->client()
+            $response = $this->toolbox($sandboxId)
                 ->asMultipart()
-                ->post("toolbox/{$sandboxId}/toolbox/files/upload?path=".urlencode($path), [
+                ->post('files/upload?path='.urlencode($path), [
                     [
                         'name' => 'file',
                         'contents' => $content,
@@ -317,7 +361,7 @@ class DaytonaClient
                 'path' => $path,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files", [
+            $response = $this->toolbox($sandboxId)->get('files', [
                 'path' => $path,
             ]);
 
@@ -344,7 +388,7 @@ class DaytonaClient
                 'path' => $path,
             ]);
 
-            $response = $this->client()->delete("toolbox/{$sandboxId}/toolbox/files?path=".urlencode($path));
+            $response = $this->toolbox($sandboxId)->delete('files?path='.urlencode($path));
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'delete file');
@@ -372,7 +416,7 @@ class DaytonaClient
                 'path' => $path,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/info", [
+            $response = $this->toolbox($sandboxId)->get('files/info', [
                 'path' => $path,
             ]);
 
@@ -422,7 +466,7 @@ class DaytonaClient
                 $payload['password'] = $password;
             }
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/clone", $payload);
+            $response = $this->toolbox($sandboxId)->post('git/clone', $payload);
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'clone repository');
@@ -453,7 +497,7 @@ class DaytonaClient
                 'repoPath' => $repoPath,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/branches", [
+            $response = $this->toolbox($sandboxId)->get('git/branches', [
                 'path' => $repoPath,
             ]);
 
@@ -484,7 +528,7 @@ class DaytonaClient
                 'filePaths' => $filePaths,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/add", [
+            $response = $this->toolbox($sandboxId)->post('git/add', [
                 'Path' => $repoPath,
                 'Files' => $filePaths,
             ]);
@@ -516,7 +560,7 @@ class DaytonaClient
                 'message' => $message,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/commit", [
+            $response = $this->toolbox($sandboxId)->post('git/commit', [
                 'Path' => $repoPath,
                 'Message' => $message,
                 'Author' => $authorName,
@@ -560,7 +604,7 @@ class DaytonaClient
                 $payload['Password'] = $password;
             }
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/git/push", $payload);
+            $response = $this->toolbox($sandboxId)->post('git/push', $payload);
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'push changes');
@@ -591,7 +635,7 @@ class DaytonaClient
                 'repoPath' => $repoPath,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/status", [
+            $response = $this->toolbox($sandboxId)->get('git/status', [
                 'path' => $repoPath,
             ]);
 
@@ -621,7 +665,7 @@ class DaytonaClient
                 'repoPath' => $repoPath,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/git/history", [
+            $response = $this->toolbox($sandboxId)->get('git/history', [
                 'path' => $repoPath,
             ]);
 
@@ -672,7 +716,7 @@ class DaytonaClient
                 'mode' => $mode,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/folder?path=".urlencode($path), [
+            $response = $this->toolbox($sandboxId)->post('files/folder?path='.urlencode($path), [
                 'mode' => $mode,
             ]);
 
@@ -709,7 +753,7 @@ class DaytonaClient
                 'destination' => $destination,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/move?source=".urlencode($source).'&destination='.urlencode($destination));
+            $response = $this->toolbox($sandboxId)->post('files/move?source='.urlencode($source).'&destination='.urlencode($destination));
 
             if (! $response->successful()) {
                 $error = $response->json('error', 'Unknown error');
@@ -743,7 +787,7 @@ class DaytonaClient
                 'path' => $path,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/info", [
+            $response = $this->toolbox($sandboxId)->get('files/info', [
                 'path' => $path,
             ]);
 
@@ -778,7 +822,7 @@ class DaytonaClient
             $queryParams = ['path' => $path] + $permissions->toArray();
             $queryString = http_build_query($queryParams);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/permissions?{$queryString}");
+            $response = $this->toolbox($sandboxId)->post("files/permissions?{$queryString}");
 
             if (! $response->successful()) {
                 $error = $response->json('error', 'Unknown error');
@@ -813,7 +857,7 @@ class DaytonaClient
                 'pattern' => $pattern,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/search", [
+            $response = $this->toolbox($sandboxId)->get('files/search', [
                 'path' => $path,
                 'pattern' => $pattern,
             ]);
@@ -849,7 +893,7 @@ class DaytonaClient
                 'pattern' => $pattern,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/files/find", [
+            $response = $this->toolbox($sandboxId)->get('files/find', [
                 'path' => $path,
                 'pattern' => $pattern,
             ]);
@@ -894,7 +938,7 @@ class DaytonaClient
 
             $replaceRequest = new ReplaceRequest($files, $pattern, $newValue);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/files/replace", $replaceRequest->toArray());
+            $response = $this->toolbox($sandboxId)->post('files/replace', $replaceRequest->toArray());
 
             if (! $response->successful()) {
                 $error = $response->json('error', 'Unknown error');
@@ -1230,7 +1274,7 @@ class DaytonaClient
                 'sessionId' => $sessionId,
             ]);
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/process/session", [
+            $response = $this->toolbox($sandboxId)->post('process/session', [
                 'SessionId' => $sessionId,
             ]);
 
@@ -1281,7 +1325,7 @@ class DaytonaClient
                 'sessionId' => $sessionId,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}");
+            $response = $this->toolbox($sandboxId)->get("process/session/{$sessionId}");
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'get session');
@@ -1362,7 +1406,7 @@ class DaytonaClient
                 'runAsync' => $request->runAsync,
             ];
 
-            $response = $this->client()->post("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/exec", $payload);
+            $response = $this->toolbox($sandboxId)->post("process/session/{$sessionId}/exec", $payload);
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'execute session command');
@@ -1422,7 +1466,7 @@ class DaytonaClient
                 'commandId' => $commandId,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/command/{$commandId}");
+            $response = $this->toolbox($sandboxId)->get("process/session/{$sessionId}/command/{$commandId}");
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'get session command');
@@ -1463,7 +1507,7 @@ class DaytonaClient
 
             if ($callback === null) {
                 // Return full logs
-                $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/command/{$commandId}/logs");
+                $response = $this->toolbox($sandboxId)->get("process/session/{$sessionId}/command/{$commandId}/logs");
 
                 if (! $response->successful()) {
                     throw ApiException::fromResponse($response, 'get session command logs');
@@ -1474,7 +1518,7 @@ class DaytonaClient
 
             // Stream logs with callback - handle chunked transfer encoding
             $httpClient = Http::withToken($this->config->apiKey)
-                ->baseUrl($this->config->apiUrl)
+                ->baseUrl($this->toolboxBaseUrl($sandboxId))
                 ->timeout(0) // No timeout for streaming
                 ->withOptions([
                     'stream' => true,
@@ -1487,7 +1531,7 @@ class DaytonaClient
                 ]);
             }
 
-            $response = $httpClient->get("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}/command/{$commandId}/logs");
+            $response = $httpClient->get("process/session/{$sessionId}/command/{$commandId}/logs");
 
             if ($response->status() >= 400) {
                 throw ApiException::fromResponse($response, 'get session command logs');
@@ -1572,7 +1616,7 @@ class DaytonaClient
                 'sandboxId' => $sandboxId,
             ]);
 
-            $response = $this->client()->get("toolbox/{$sandboxId}/toolbox/process/session");
+            $response = $this->toolbox($sandboxId)->get('process/session');
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'list sessions');
@@ -1624,7 +1668,7 @@ class DaytonaClient
                 'sessionId' => $sessionId,
             ]);
 
-            $response = $this->client()->delete("toolbox/{$sandboxId}/toolbox/process/session/{$sessionId}");
+            $response = $this->toolbox($sandboxId)->delete("process/session/{$sessionId}");
 
             if (! $response->successful()) {
                 throw ApiException::fromResponse($response, 'delete session');

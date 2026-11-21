@@ -37,8 +37,9 @@ it('throws SandboxException when response is missing ID', function () {
 })->throws(SandboxException::class, 'Invalid response from Daytona API: missing sandbox ID');
 
 it('throws ApiException when file read fails with HTTP error', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/files/download*' => Http::response(['error' => 'File not found'], 404),
+        '*/toolbox/*/files/download*' => Http::response(['error' => 'File not found'], 404),
     ]);
 
     $client = app(DaytonaClient::class);
@@ -46,8 +47,9 @@ it('throws ApiException when file read fails with HTTP error', function () {
 })->throws(ApiException::class, 'Resource not found.');
 
 it('throws ApiException when file write fails with HTTP error', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/files/upload*' => Http::response(['error' => 'Permission denied'], 403),
+        '*/toolbox/*/files/upload*' => Http::response(['error' => 'Permission denied'], 403),
     ]);
 
     $client = app(DaytonaClient::class);
@@ -55,8 +57,9 @@ it('throws ApiException when file write fails with HTTP error', function () {
 })->throws(ApiException::class, 'Access denied. Please check your permissions.');
 
 it('throws ApiException when directory listing fails with HTTP error', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/files*' => Http::response(['error' => 'Directory not found'], 404),
+        '*/toolbox/*/files*' => Http::response(['error' => 'Directory not found'], 404),
     ]);
 
     $client = app(DaytonaClient::class);
@@ -64,8 +67,9 @@ it('throws ApiException when directory listing fails with HTTP error', function 
 })->throws(ApiException::class, 'Resource not found.');
 
 it('throws ApiException when command fails with HTTP error', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/process/execute' => Http::response(['error' => 'Command not found'], 400),
+        '*/toolbox/*/process/execute' => Http::response(['error' => 'Command not found'], 400),
     ]);
 
     $client = app(DaytonaClient::class);
@@ -73,8 +77,9 @@ it('throws ApiException when command fails with HTTP error', function () {
 })->throws(ApiException::class, 'API request failed: {"error":"Command not found"}');
 
 it('throws ApiException when clone fails with HTTP error', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/git/clone' => Http::response(['error' => 'Repository not found'], 404),
+        '*/toolbox/*/git/clone' => Http::response(['error' => 'Repository not found'], 404),
     ]);
 
     $client = app(DaytonaClient::class);
@@ -82,8 +87,9 @@ it('throws ApiException when clone fails with HTTP error', function () {
 })->throws(ApiException::class, 'Resource not found.');
 
 it('throws ApiException when commit fails with HTTP error', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/git/commit' => Http::response(['error' => 'Nothing to commit'], 400),
+        '*/toolbox/*/git/commit' => Http::response(['error' => 'Nothing to commit'], 400),
     ]);
 
     $client = app(DaytonaClient::class);

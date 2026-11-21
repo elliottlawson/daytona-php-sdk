@@ -517,12 +517,13 @@ describe('Sandbox Discovery and Filtering', function () {
         it('can chain discovery with waiting operations', function () {
             $sandboxData = $this->sampleSandboxes[0];
             $sandboxData['state'] = 'started';
+            $sandboxData['toolboxProxyUrl'] = 'https://proxy.test/toolbox';
 
             Http::fake([
                 '*/sandbox?*' => Http::response([$sandboxData], 200), // For listSandboxes with filter
                 '*/sandbox/sandbox-1' => Http::response($sandboxData, 200), // For getSandbox calls
                 '*/sandbox/sandbox-1/start' => Http::response($sandboxData, 200),
-                '*/toolbox/sandbox-1/toolbox/process/execute' => Http::response([
+                '*/toolbox/sandbox-1/process/execute' => Http::response([
                     'exitCode' => 0,
                     'stdout' => 'Hello World',
                     'stderr' => '',

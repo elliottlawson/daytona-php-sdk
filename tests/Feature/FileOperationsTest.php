@@ -11,6 +11,8 @@ use ElliottLawson\Daytona\Exceptions\ApiException;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
+    fakeToolboxProxy();
+
     $this->config = new Config(
         apiKey: 'test-api-key',
         apiUrl: 'https://api.example.com',
@@ -23,13 +25,13 @@ beforeEach(function () {
 describe('createFolder method', function () {
     it('can create a directory with permissions', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
         ]);
 
         $this->client->createFolder($this->sandboxId, '/app/data', '755');
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/folder') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/folder') &&
                    $request->method() === 'POST' &&
                    str_contains($request->url(), 'path='.urlencode('/app/data')) &&
                    $request->data()['mode'] === '755';
@@ -38,7 +40,7 @@ describe('createFolder method', function () {
 
     it('throws exception on API error', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response(['error' => 'Permission denied'], 403),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response(['error' => 'Permission denied'], 403),
         ]);
 
         expect(fn () => $this->client->createFolder($this->sandboxId, '/restricted', '755'))
@@ -49,13 +51,13 @@ describe('createFolder method', function () {
 describe('moveFile method', function () {
     it('can move files and directories', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/move*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/move*' => Http::response([], 200),
         ]);
 
         $this->client->moveFile($this->sandboxId, '/tmp/file.txt', '/app/file.txt');
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/move') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/move') &&
                    $request->method() === 'POST' &&
                    str_contains($request->url(), 'source='.urlencode('/tmp/file.txt')) &&
                    str_contains($request->url(), 'destination='.urlencode('/app/file.txt'));
@@ -64,7 +66,7 @@ describe('moveFile method', function () {
 
     it('throws exception on API error', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/move*' => Http::response(['error' => 'File not found'], 404),
+            '*/toolbox/sandbox-123/files/move*' => Http::response(['error' => 'File not found'], 404),
         ]);
 
         expect(fn () => $this->client->moveFile($this->sandboxId, '/nonexistent.txt', '/app/file.txt'))
@@ -86,7 +88,7 @@ describe('getFileDetails method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/info*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/info*' => Http::response($mockResponse, 200),
         ]);
 
         $fileInfo = $this->client->getFileDetails($this->sandboxId, '/app/config.json');
@@ -100,7 +102,7 @@ describe('getFileDetails method', function () {
             ->and($fileInfo->group)->toBe('www-data');
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/info') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/info') &&
                    $request->method() === 'GET' &&
                    str_contains($request->url(), 'path=%2Fapp%2Fconfig.json');
         });
@@ -108,7 +110,7 @@ describe('getFileDetails method', function () {
 
     it('throws exception when file not found', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/info*' => Http::response(['error' => 'File not found'], 404),
+            '*/toolbox/sandbox-123/files/info*' => Http::response(['error' => 'File not found'], 404),
         ]);
 
         expect(fn () => $this->client->getFileDetails($this->sandboxId, '/nonexistent.txt'))
@@ -119,7 +121,7 @@ describe('getFileDetails method', function () {
 describe('setFilePermissions method', function () {
     it('can set file permissions with all parameters', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $permissions = new FilePermissionsParams(
@@ -131,7 +133,7 @@ describe('setFilePermissions method', function () {
         $this->client->setFilePermissions($this->sandboxId, '/app/config.php', $permissions);
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/permissions') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/permissions') &&
                    $request->method() === 'POST' &&
                    str_contains($request->url(), 'path='.urlencode('/app/config.php')) &&
                    str_contains($request->url(), 'mode=644') &&
@@ -142,7 +144,7 @@ describe('setFilePermissions method', function () {
 
     it('can set file permissions with partial parameters', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response([], 200),
         ]);
 
         $permissions = new FilePermissionsParams(mode: '755');
@@ -150,7 +152,7 @@ describe('setFilePermissions method', function () {
         $this->client->setFilePermissions($this->sandboxId, '/app/script.sh', $permissions);
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/permissions') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/permissions') &&
                    str_contains($request->url(), 'path='.urlencode('/app/script.sh')) &&
                    str_contains($request->url(), 'mode=755');
         });
@@ -158,7 +160,7 @@ describe('setFilePermissions method', function () {
 
     it('throws exception on permission denied', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/permissions*' => Http::response(['error' => 'Permission denied'], 403),
+            '*/toolbox/sandbox-123/files/permissions*' => Http::response(['error' => 'Permission denied'], 403),
         ]);
 
         $permissions = new FilePermissionsParams(mode: '644');
@@ -175,7 +177,7 @@ describe('searchFiles method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/search*' => Http::response($mockResponse, 200),
         ]);
 
         $result = $this->client->searchFiles($this->sandboxId, '/app', '*.json');
@@ -185,7 +187,7 @@ describe('searchFiles method', function () {
             ->and($result->getCount())->toBe(3);
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/search') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/search') &&
                    $request->method() === 'GET' &&
                    str_contains($request->url(), 'path=%2Fapp') &&
                    str_contains($request->url(), 'pattern=%2A.json');
@@ -196,7 +198,7 @@ describe('searchFiles method', function () {
         $mockResponse = ['files' => []];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/search*' => Http::response($mockResponse, 200),
         ]);
 
         $result = $this->client->searchFiles($this->sandboxId, '/empty', '*.nonexistent');
@@ -207,7 +209,7 @@ describe('searchFiles method', function () {
 
     it('throws exception on API error', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/search*' => Http::response(['error' => 'Invalid pattern'], 400),
+            '*/toolbox/sandbox-123/files/search*' => Http::response(['error' => 'Invalid pattern'], 400),
         ]);
 
         expect(fn () => $this->client->searchFiles($this->sandboxId, '/app', '[invalid'))
@@ -231,7 +233,7 @@ describe('findInFiles method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/find*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/find*' => Http::response($mockResponse, 200),
         ]);
 
         $matches = $this->client->findInFiles($this->sandboxId, '/app/src', 'TODO|FIXME');
@@ -245,7 +247,7 @@ describe('findInFiles method', function () {
             ->and($matches[1]->line)->toBe(15);
 
         Http::assertSent(function ($request) {
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/find') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/find') &&
                    $request->method() === 'GET' &&
                    str_contains($request->url(), 'path=%2Fapp%2Fsrc') &&
                    str_contains($request->url(), 'pattern=TODO%7CFIXME');
@@ -254,7 +256,7 @@ describe('findInFiles method', function () {
 
     it('handles no matches found', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/find*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/find*' => Http::response([], 200),
         ]);
 
         $matches = $this->client->findInFiles($this->sandboxId, '/app', 'nonexistent-pattern');
@@ -265,7 +267,7 @@ describe('findInFiles method', function () {
 
     it('throws exception on API error', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/find*' => Http::response(['error' => 'Invalid regex'], 400),
+            '*/toolbox/sandbox-123/files/find*' => Http::response(['error' => 'Invalid regex'], 400),
         ]);
 
         expect(fn () => $this->client->findInFiles($this->sandboxId, '/app', '[invalid-regex'))
@@ -287,7 +289,7 @@ describe('replaceInFiles method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response($mockResponse, 200),
         ]);
 
         $files = ['/app/config.php', '/app/settings.php'];
@@ -303,7 +305,7 @@ describe('replaceInFiles method', function () {
         Http::assertSent(function ($request) {
             $requestData = $request->data();
 
-            return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/files/replace') &&
+            return str_contains($request->url(), 'toolbox/sandbox-123/files/replace') &&
                    $request->method() === 'POST' &&
                    $requestData['files'] === ['/app/config.php', '/app/settings.php'] &&
                    $requestData['pattern'] === 'debug = false' &&
@@ -325,7 +327,7 @@ describe('replaceInFiles method', function () {
         ];
 
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response($mockResponse, 200),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response($mockResponse, 200),
         ]);
 
         $files = ['/app/config.php', '/app/readonly.txt'];
@@ -340,7 +342,7 @@ describe('replaceInFiles method', function () {
 
     it('throws exception on API error', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/replace*' => Http::response(['error' => 'Invalid request'], 400),
+            '*/toolbox/sandbox-123/files/replace*' => Http::response(['error' => 'Invalid request'], 400),
         ]);
 
         expect(fn () => $this->client->replaceInFiles($this->sandboxId, [], 'pattern', 'replacement'))
@@ -351,7 +353,7 @@ describe('replaceInFiles method', function () {
 describe('HTTP request headers and organization ID', function () {
     it('includes organization ID header when configured', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/folder*' => Http::response([], 200),
+            '*/toolbox/sandbox-123/files/folder*' => Http::response([], 200),
         ]);
 
         $this->client->createFolder($this->sandboxId, '/test', '755');
@@ -364,7 +366,7 @@ describe('HTTP request headers and organization ID', function () {
 
     it('includes proper authentication headers', function () {
         Http::fake([
-            '*/toolbox/sandbox-123/toolbox/files/info*' => Http::response([
+            '*/toolbox/sandbox-123/files/info*' => Http::response([
                 'name' => 'test.txt',
                 'isDir' => false,
                 'size' => 100,

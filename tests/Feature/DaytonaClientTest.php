@@ -57,8 +57,9 @@ it('can be resolved from container in Laravel', function () {
 });
 
 it('passes command timeout to HTTP client with proper conversion', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/process/execute' => Http::response([
+        '*/toolbox/*/process/execute' => Http::response([
             'exitCode' => 0,
             'stdout' => 'Command output',
             'stderr' => '',
@@ -83,14 +84,15 @@ it('passes command timeout to HTTP client with proper conversion', function () {
 
     // Verify the HTTP request was made
     Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/process/execute') &&
+        return str_contains($request->url(), 'toolbox/sandbox-123/process/execute') &&
                $request['timeout'] === 60000;
     });
 });
 
 it('uses default timeout when no command timeout is specified', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/process/execute' => Http::response([
+        '*/toolbox/*/process/execute' => Http::response([
             'exitCode' => 0,
             'stdout' => 'Command output',
             'stderr' => '',
@@ -111,7 +113,7 @@ it('uses default timeout when no command timeout is specified', function () {
 
     // Verify the request was made without timeout in payload
     Http::assertSent(function ($request) {
-        return str_contains($request->url(), 'toolbox/sandbox-123/toolbox/process/execute') &&
+        return str_contains($request->url(), 'toolbox/sandbox-123/process/execute') &&
                ! isset($request['timeout']);
     });
 });

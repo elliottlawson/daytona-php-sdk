@@ -38,8 +38,9 @@ it('can create sandbox using facade', function () {
 });
 
 it('can execute commands using facade', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/process/execute' => Http::response([
+        '*/toolbox/*/process/execute' => Http::response([
             'exitCode' => 0,
             'stdout' => 'PHP 8.3.0',
             'stderr' => '',
@@ -53,9 +54,10 @@ it('can execute commands using facade', function () {
 });
 
 it('can work with files using facade', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/*/toolbox/files/upload*' => Http::response([], 200),
-        '*/toolbox/*/toolbox/files/download*' => Http::response('Hello from Facade!', 200),
+        '*/toolbox/*/files/upload*' => Http::response([], 200),
+        '*/toolbox/*/files/download*' => Http::response('Hello from Facade!', 200),
     ]);
 
     Daytona::writeFile('sandbox-123', '/workspace/test.txt', 'Hello from Facade!');

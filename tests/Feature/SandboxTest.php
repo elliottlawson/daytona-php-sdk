@@ -14,8 +14,10 @@ it('can execute commands in a sandbox', function () {
         'stderr' => '',
     ];
 
+    fakeToolboxProxy();
+
     Http::fake([
-        '*/toolbox/sandbox-123/toolbox/process/execute' => Http::response($mockResponse, 200),
+        '*/toolbox/sandbox-123/process/execute' => Http::response($mockResponse, 200),
     ]);
 
     $config = new Config(
@@ -37,8 +39,10 @@ it('can execute commands in a sandbox', function () {
 it('can read file contents from sandbox', function () {
     $mockContent = 'console.log("Hello World");';
 
+    fakeToolboxProxy();
+
     Http::fake([
-        '*/toolbox/sandbox-123/toolbox/files/download*' => Http::response($mockContent, 200),
+        '*/toolbox/sandbox-123/files/download*' => Http::response($mockContent, 200),
     ]);
 
     $config = new Config(
@@ -55,8 +59,9 @@ it('can read file contents from sandbox', function () {
 });
 
 it('can write file contents to sandbox', function () {
+    fakeToolboxProxy();
     Http::fake([
-        '*/toolbox/sandbox-123/toolbox/files/upload*' => Http::response(['success' => true], 200),
+        '*/toolbox/sandbox-123/files/upload*' => Http::response(['success' => true], 200),
     ]);
 
     $config = new Config(
@@ -82,8 +87,10 @@ it('can list directory contents', function () {
         ],
     ];
 
+    fakeToolboxProxy();
+
     Http::fake([
-        '*/toolbox/sandbox-123/toolbox/files*' => Http::response($mockResponse, 200),
+        '*/toolbox/sandbox-123/files*' => Http::response($mockResponse, 200),
     ]);
 
     $config = new Config(
